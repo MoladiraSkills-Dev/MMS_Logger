@@ -257,3 +257,16 @@ async function handleRegisterSubmit(event) {
     showAlert("authAlert", "Network/Server Connection Error: " + err.message, "danger");
   }
 }
+
+/**
+ * Public Partner Loggers Modal Controllers
+ */
+function openPublicLoggersModal() {
+  const modal = document.getElementById("publicLoggersModal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closePublicLoggersModal() {
+  const modal = document.getElementById("publicLoggersModal");
+  if (modal) modal.classList.add("hidden");
+}

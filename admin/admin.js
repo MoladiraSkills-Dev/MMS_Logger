@@ -50,6 +50,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize Client Loggers Hub
   renderClientLoggers();
 
+  // Support direct URL hash navigation (e.g. admin/index.html#loggers)
+  const initialHash = window.location.hash.replace("#", "").toLowerCase();
+  if (initialHash && ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers'].includes(initialHash)) {
+    switchAdminTab(initialHash);
+  }
+
+  window.addEventListener("hashchange", () => {
+    const hash = window.location.hash.replace("#", "").toLowerCase();
+    if (hash && ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers'].includes(hash)) {
+      switchAdminTab(hash);
+    }
+  });
+
   // Fetch complete admin state
   loadAdminDashboard();
 });
@@ -240,8 +253,27 @@ function switchAdminTab(tabName) {
       if (content) content.classList.add("hidden");
     }
   });
+
+  // Highlight top header button if on loggers
+  const topHeaderBtn = document.getElementById("btnAdminClientLoggers");
+  if (topHeaderBtn) {
+    if (tabName === 'loggers') {
+      topHeaderBtn.classList.remove("btn-secondary");
+      topHeaderBtn.classList.add("btn-primary");
+    } else {
+      topHeaderBtn.classList.remove("btn-primary");
+      topHeaderBtn.classList.add("btn-secondary");
+    }
+  }
+
   if (tabName === 'loggers') {
     renderClientLoggers();
+  }
+
+  // Smooth scroll to the active content tab if user initiated navigation
+  const targetContent = document.getElementById(`contentTab${capitalize(tabName)}`);
+  if (targetContent && window.scrollY > 80) {
+    targetContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -1283,7 +1315,17 @@ function getClientLoggers() {
     const raw = localStorage.getItem(CLIENT_LOGGERS_STORAGE_KEY);
     if (!raw) return DEFAULT_CLIENT_LOGGERS;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_CLIENT_LOGGERS;
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_CLIENT_LOGGERS;
+
+    // Ensure all default client loggers exist in the active collection
+    const existingIds = new Set(parsed.map(l => l.id));
+    const merged = [...parsed];
+    DEFAULT_CLIENT_LOGGERS.forEach(def => {
+      if (!existingIds.has(def.id)) {
+        merged.push(def);
+      }
+    });
+    return merged;
   } catch (e) {
     console.error("Error reading client loggers from storage:", e);
     return DEFAULT_CLIENT_LOGGERS;
@@ -1375,7 +1417,7 @@ function renderClientLoggers() {
             <span>🚀</span> Launch Portal
           </a>
           <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('${logger.id}')">
-            <span>👁️</span> Preview Inline
+            <span>👁️</span> Preview / Details
           </button>
           <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('${logger.id}')" title="Edit Logger Config">
             <span>✏️</span>
@@ -1454,6 +1496,11 @@ function previewClientLogger(id) {
 
   if (loader) loader.classList.remove("hidden");
   if (iframe) iframe.src = logger.url;
+
+  // Auto-dismiss spinner fallback if cross-origin policy suppresses iframe load event
+  setTimeout(() => {
+    if (loader) loader.classList.add("hidden");
+  }, 1200);
 
   if (modal) modal.classList.remove("hidden");
 }

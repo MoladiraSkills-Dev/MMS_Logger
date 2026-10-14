@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="MolāDira Skills (MMS) Corporate Admin Operations Hub. Geolocation Shift Auditing, Timesheets, Leave & Device Approvals.">
   <title>MolāDira Skills - MMS Admin Operations Hub</title>
-  <link rel="stylesheet" href="../shared/css/base.css">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="../shared/css/base.css?v=2.2">
+  <link rel="stylesheet" href="admin.css?v=2.2">
 </head>
 <body>
 
@@ -515,9 +515,167 @@
         </div>
       </div>
 
-      <!-- Dynamic Grid of Client Loggers -->
+      <!-- Dynamic Grid of Client Loggers (Pre-rendered for instantaneous display) -->
       <div class="client-loggers-grid" id="clientLoggersGrid">
-        <!-- Rendered dynamically by admin.js -->
+        <!-- Card 1: FNB -->
+        <div class="client-logger-card theme-teal" id="card-logger-fnb-logsheet">
+          <div>
+            <div class="client-logger-top">
+              <div class="client-logger-brand">
+                <div class="client-logger-icon-box">🏦</div>
+                <div class="client-logger-info">
+                  <span class="client-tag">Banking &amp; Corporate &bull; FNB Enterprise</span>
+                  <h3>First National Bank (FNB)</h3>
+                  <div class="text-xs font-semibold text-gradient">FNB Logsheet System &amp; Corporate Access</div>
+                </div>
+              </div>
+              <span class="client-logger-status">
+                <span class="status-dot"></span> Active Gateway
+              </span>
+            </div>
+
+            <p class="client-logger-desc">Corporate logsheet and shift attendance system for FNB contract personnel, branch audits, and timesheet compliance.</p>
+
+            <div class="client-logger-meta">
+              <span class="client-logger-url" title="https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec">https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec', 'First National Bank (FNB)')" title="Copy URL">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="client-logger-actions">
+            <a href="https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <span>🚀</span> Launch Portal
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('fnb-logsheet')">
+              <span>👁️</span> Preview / Details
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fnb-logsheet')" title="Edit Logger Config">
+              <span>✏️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 2: Fibre Field Operations -->
+        <div class="client-logger-card theme-blue" id="card-logger-fibre-field-ops">
+          <div>
+            <div class="client-logger-top">
+              <div class="client-logger-brand">
+                <div class="client-logger-icon-box">⚡</div>
+                <div class="client-logger-info">
+                  <span class="client-tag">Fibre &amp; Infrastructure &bull; Field Ops Hub</span>
+                  <h3>Fibre Field Operations</h3>
+                  <div class="text-xs font-semibold text-gradient">Field Agent Dispatch &amp; Telemetry</div>
+                </div>
+              </div>
+              <span class="client-logger-status">
+                <span class="status-dot"></span> Active Gateway
+              </span>
+            </div>
+
+            <p class="client-logger-desc">Real-time field technician and agent operations dashboard for tracking site visits, fibre drop surveys, and installations.</p>
+
+            <div class="client-logger-meta">
+              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html">https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html', 'Fibre Field Operations')" title="Copy URL">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="client-logger-actions">
+            <a href="https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <span>🚀</span> Launch Portal
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('fibre-field-ops')">
+              <span>👁️</span> Preview / Details
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fibre-field-ops')" title="Edit Logger Config">
+              <span>✏️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 3: SADV Logger -->
+        <div class="client-logger-card theme-orange" id="card-logger-sadv-logger">
+          <div>
+            <div class="client-logger-top">
+              <div class="client-logger-brand">
+                <div class="client-logger-icon-box">🌐</div>
+                <div class="client-logger-info">
+                  <span class="client-tag">Fibre &amp; Infrastructure &bull; SADV Admin</span>
+                  <h3>SADV (South Atlantic Distributed Ventures)</h3>
+                  <div class="text-xs font-semibold text-gradient">SADV Field Operations &amp; Admin Logger</div>
+                </div>
+              </div>
+              <span class="client-logger-status">
+                <span class="status-dot"></span> Active Gateway
+              </span>
+            </div>
+
+            <p class="client-logger-desc">Centralized administrator and supervisor portal for SADV infrastructure rollouts, technician attendance, and contractor shifts.</p>
+
+            <div class="client-logger-meta">
+              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html">https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html', 'SADV (South Atlantic Distributed Ventures)')" title="Copy URL">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="client-logger-actions">
+            <a href="https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <span>🚀</span> Launch Portal
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('sadv-logger')">
+              <span>👁️</span> Preview / Details
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('sadv-logger')" title="Edit Logger Config">
+              <span>✏️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 4: FibreGems CRM -->
+        <div class="client-logger-card theme-purple" id="card-logger-fibregems-crm">
+          <div>
+            <div class="client-logger-top">
+              <div class="client-logger-brand">
+                <div class="client-logger-icon-box">💎</div>
+                <div class="client-logger-info">
+                  <span class="client-tag">CRM &amp; Pipeline &bull; Enterprise CRM</span>
+                  <h3>FibreGems Group</h3>
+                  <div class="text-xs font-semibold text-gradient">Customer Relationships &amp; Lead Pipeline</div>
+                </div>
+              </div>
+              <span class="client-logger-status">
+                <span class="status-dot"></span> Active Gateway
+              </span>
+            </div>
+
+            <p class="client-logger-desc">Enterprise client engagement portal, sales coverage tracker, lead progression pipeline, and customer relationship database.</p>
+
+            <div class="client-logger-meta">
+              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/FibreGemsCRM/index.html">https://moladiraskills-dev.github.io/FibreGemsCRM/index.html</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/FibreGemsCRM/index.html', 'FibreGems Group')" title="Copy URL">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="client-logger-actions">
+            <a href="https://moladiraskills-dev.github.io/FibreGemsCRM/index.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <span>🚀</span> Launch Portal
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('fibregems-crm')">
+              <span>👁️</span> Preview / Details
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fibregems-crm')" title="Edit Logger Config">
+              <span>✏️</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -832,6 +990,6 @@
 
   <script src="../shared/js/api.js"></script>
   <script src="../shared/js/leave_device.js"></script>
-  <script src="admin.js"></script>
+  <script src="admin.js?v=2.2"></script>
 </body>
 </html>

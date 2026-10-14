@@ -356,3 +356,16 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+/**
+ * Client Loggers Modal Controllers for Employees
+ */
+function openEmpLoggersModal() {
+  const modal = document.getElementById("empLoggersModal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closeEmpLoggersModal() {
+  const modal = document.getElementById("empLoggersModal");
+  if (modal) modal.classList.add("hidden");
+}
