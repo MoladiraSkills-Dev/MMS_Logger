@@ -47,6 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Set default export range to 'thisMonth'
   setDatePreset("thisMonth");
 
+  // Initialize Client Loggers Hub
+  renderClientLoggers();
+
   // Fetch complete admin state
   loadAdminDashboard();
 });
@@ -225,7 +228,7 @@ function populateExportStaffDropdown(staffList) {
    ========================================================================== */
 
 function switchAdminTab(tabName) {
-  const tabs = ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export'];
+  const tabs = ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tabBtn${capitalize(t)}`);
     const content = document.getElementById(`contentTab${capitalize(t)}`);
@@ -237,6 +240,9 @@ function switchAdminTab(tabName) {
       if (content) content.classList.add("hidden");
     }
   });
+  if (tabName === 'loggers') {
+    renderClientLoggers();
+  }
 }
 
 function capitalize(str) {
@@ -1210,4 +1216,412 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/* ==========================================================================
+   CLIENT LOGGERS & EXTERNAL OPERATIONS HUB CONTROLLER
+   ========================================================================== */
+
+const CLIENT_LOGGERS_STORAGE_KEY = "mms_client_loggers";
+
+const DEFAULT_CLIENT_LOGGERS = [
+  {
+    id: "fnb-logsheet",
+    client: "First National Bank (FNB)",
+    title: "FNB Logsheet System & Corporate Access",
+    url: "https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec",
+    category: "Banking & Corporate",
+    theme: "teal",
+    icon: "🏦",
+    badge: "FNB Enterprise",
+    desc: "Corporate logsheet and shift attendance system for FNB contract personnel, branch audits, and timesheet compliance.",
+    isDefault: true
+  },
+  {
+    id: "fibre-field-ops",
+    client: "Fibre Field Operations",
+    title: "Field Agent Dispatch & Telemetry",
+    url: "https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html",
+    category: "Fibre & Infrastructure",
+    theme: "blue",
+    icon: "⚡",
+    badge: "Field Ops Hub",
+    desc: "Real-time field technician and agent operations dashboard for tracking site visits, fibre drop surveys, and installations.",
+    isDefault: true
+  },
+  {
+    id: "sadv-logger",
+    client: "SADV (South Atlantic Distributed Ventures)",
+    title: "SADV Field Operations & Admin Logger",
+    url: "https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html",
+    category: "Fibre & Infrastructure",
+    theme: "orange",
+    icon: "🌐",
+    badge: "SADV Admin",
+    desc: "Centralized administrator and supervisor portal for SADV infrastructure rollouts, technician attendance, and contractor shifts.",
+    isDefault: true
+  },
+  {
+    id: "fibregems-crm",
+    client: "FibreGems Group",
+    title: "Customer Relationships & Lead Pipeline",
+    url: "https://moladiraskills-dev.github.io/FibreGemsCRM/index.html",
+    category: "CRM & Pipeline",
+    theme: "purple",
+    icon: "💎",
+    badge: "Enterprise CRM",
+    desc: "Enterprise client engagement portal, sales coverage tracker, lead progression pipeline, and customer relationship database.",
+    isDefault: true
+  }
+];
+
+let ACTIVE_LOGGER_CATEGORY = "ALL";
+let SEARCH_LOGGER_QUERY = "";
+
+function getClientLoggers() {
+  try {
+    const raw = localStorage.getItem(CLIENT_LOGGERS_STORAGE_KEY);
+    if (!raw) return DEFAULT_CLIENT_LOGGERS;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_CLIENT_LOGGERS;
+  } catch (e) {
+    console.error("Error reading client loggers from storage:", e);
+    return DEFAULT_CLIENT_LOGGERS;
+  }
+}
+
+function saveClientLoggers(loggers) {
+  try {
+    localStorage.setItem(CLIENT_LOGGERS_STORAGE_KEY, JSON.stringify(loggers));
+  } catch (e) {
+    console.error("Error saving client loggers to storage:", e);
+  }
+}
+
+function renderClientLoggers() {
+  const container = document.getElementById("clientLoggersGrid");
+  const tabBadge = document.getElementById("tabBadgeLoggers");
+  if (!container) return;
+
+  const allLoggers = getClientLoggers();
+  if (tabBadge) tabBadge.innerText = allLoggers.length;
+
+  let filtered = allLoggers;
+
+  if (ACTIVE_LOGGER_CATEGORY !== "ALL") {
+    filtered = filtered.filter(l => l.category === ACTIVE_LOGGER_CATEGORY);
+  }
+
+  if (SEARCH_LOGGER_QUERY) {
+    const q = SEARCH_LOGGER_QUERY.toLowerCase();
+    filtered = filtered.filter(l =>
+      (l.client && l.client.toLowerCase().includes(q)) ||
+      (l.title && l.title.toLowerCase().includes(q)) ||
+      (l.desc && l.desc.toLowerCase().includes(q)) ||
+      (l.url && l.url.toLowerCase().includes(q))
+    );
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; background: var(--bg-card); border: 1px dashed var(--border-muted); border-radius: var(--radius-xl);">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;">🔍</span>
+        <h3 class="text-base font-bold text-main">No Client Loggers Matched</h3>
+        <p class="text-xs text-muted mt-1">Try adjusting your category filter or search query, or click "+ Add Client Logger" above.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(logger => {
+    const themeClass = `theme-${logger.theme || "teal"}`;
+    const escapedUrl = escapeHtml(logger.url);
+    const escapedClient = escapeHtml(logger.client);
+    const escapedTitle = escapeHtml(logger.title);
+    const escapedDesc = escapeHtml(logger.desc || "External client tracking and operations gateway.");
+    const escapedCategory = escapeHtml(logger.category || "General");
+    const escapedBadge = escapeHtml(logger.badge || "Client Gateway");
+    const icon = logger.icon || "🏢";
+
+    return `
+      <div class="client-logger-card ${themeClass}" id="card-logger-${logger.id}">
+        <div>
+          <div class="client-logger-top">
+            <div class="client-logger-brand">
+              <div class="client-logger-icon-box">${icon}</div>
+              <div class="client-logger-info">
+                <span class="client-tag">${escapedCategory} &bull; ${escapedBadge}</span>
+                <h3>${escapedClient}</h3>
+                <div class="text-xs font-semibold text-gradient">${escapedTitle}</div>
+              </div>
+            </div>
+            <span class="client-logger-status">
+              <span class="status-dot"></span> Active Gateway
+            </span>
+          </div>
+
+          <p class="client-logger-desc">${escapedDesc}</p>
+
+          <div class="client-logger-meta">
+            <span class="client-logger-url" title="${escapedUrl}">${escapedUrl}</span>
+            <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('${escapedUrl}', '${escapedClient}')" title="Copy URL">
+              📋 Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="client-logger-actions">
+          <a href="${escapedUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <span>🚀</span> Launch Portal
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('${logger.id}')">
+            <span>👁️</span> Preview Inline
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('${logger.id}')" title="Edit Logger Config">
+            <span>✏️</span>
+          </button>
+          ${!logger.isDefault ? `
+            <button type="button" class="btn btn-danger btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="deleteClientLogger('${logger.id}', '${escapedClient}')" title="Delete Custom Logger">
+              <span>🗑️</span>
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterLoggersByCategory(category, pillEl) {
+  ACTIVE_LOGGER_CATEGORY = category;
+
+  const pills = document.querySelectorAll("#loggerCategoryPills .category-pill");
+  pills.forEach(p => p.classList.remove("active"));
+  if (pillEl) pillEl.classList.add("active");
+
+  renderClientLoggers();
+}
+
+function handleSearchClientLoggers(val) {
+  SEARCH_LOGGER_QUERY = val ? val.trim() : "";
+  renderClientLoggers();
+}
+
+function copyLoggerUrl(url, clientName) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast(`Copied ${clientName} portal link to clipboard!`, "success", "Link Copied");
+    }).catch(() => {
+      fallbackCopy(url, clientName);
+    });
+  } else {
+    fallbackCopy(url, clientName);
+  }
+}
+
+function fallbackCopy(text, clientName) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    showToast(`Copied ${clientName} portal link to clipboard!`, "success", "Link Copied");
+  } catch (err) {
+    showToast("Failed to copy URL automatically. Please copy from text box.", "warning", "Copy Failed");
+  }
+  document.body.removeChild(ta);
+}
+
+function previewClientLogger(id) {
+  const loggers = getClientLoggers();
+  const logger = loggers.find(l => l.id === id);
+  if (!logger) return;
+
+  const modal = document.getElementById("previewLoggerModal");
+  const title = document.getElementById("previewLoggerTitle");
+  const subtitle = document.getElementById("previewLoggerSubtitle");
+  const icon = document.getElementById("previewLoggerIcon");
+  const extLink = document.getElementById("previewExternalLink");
+  const iframe = document.getElementById("previewLoggerIframe");
+  const loader = document.getElementById("previewLoader");
+
+  if (title) title.innerText = `${logger.client} - ${logger.title}`;
+  if (subtitle) subtitle.innerText = `Target: ${logger.url}`;
+  if (icon) icon.innerText = logger.icon || "🌐";
+  if (extLink) extLink.href = logger.url;
+
+  if (loader) loader.classList.remove("hidden");
+  if (iframe) iframe.src = logger.url;
+
+  if (modal) modal.classList.remove("hidden");
+}
+
+function handleIframeLoaded() {
+  const loader = document.getElementById("previewLoader");
+  if (loader) {
+    setTimeout(() => {
+      loader.classList.add("hidden");
+    }, 400);
+  }
+}
+
+function closePreviewLoggerModal() {
+  const modal = document.getElementById("previewLoggerModal");
+  const iframe = document.getElementById("previewLoggerIframe");
+  if (iframe) iframe.src = "about:blank";
+  if (modal) modal.classList.add("hidden");
+}
+
+function openAddLoggerModal(editId = null) {
+  const modal = document.getElementById("editLoggerModal");
+  const modalTitle = document.getElementById("editLoggerModalTitle");
+  const idInput = document.getElementById("editLoggerId");
+  const clientInput = document.getElementById("loggerClientName");
+  const titleInput = document.getElementById("loggerTitle");
+  const urlInput = document.getElementById("loggerUrl");
+  const categorySelect = document.getElementById("loggerCategory");
+  const themeSelect = document.getElementById("loggerTheme");
+  const descInput = document.getElementById("loggerDesc");
+
+  if (editId) {
+    const loggers = getClientLoggers();
+    const logger = loggers.find(l => l.id === editId);
+    if (logger) {
+      if (modalTitle) modalTitle.innerText = `✏️ Edit Client Logger: ${logger.client}`;
+      if (idInput) idInput.value = logger.id;
+      if (clientInput) clientInput.value = logger.client || "";
+      if (titleInput) titleInput.value = logger.title || "";
+      if (urlInput) urlInput.value = logger.url || "";
+      if (categorySelect) categorySelect.value = logger.category || "Banking & Corporate";
+      if (themeSelect) themeSelect.value = logger.theme || "teal";
+      if (descInput) descInput.value = logger.desc || "";
+    }
+  } else {
+    if (modalTitle) modalTitle.innerText = "🏢 Add New Client Logger";
+    if (idInput) idInput.value = "";
+    if (clientInput) clientInput.value = "";
+    if (titleInput) titleInput.value = "";
+    if (urlInput) urlInput.value = "";
+    if (categorySelect) categorySelect.value = "Fibre & Infrastructure";
+    if (themeSelect) themeSelect.value = "blue";
+    if (descInput) descInput.value = "";
+  }
+
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closeEditLoggerModal() {
+  const modal = document.getElementById("editLoggerModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function handleSaveClientLogger(event) {
+  event.preventDefault();
+
+  const id = document.getElementById("editLoggerId").value.trim();
+  const client = document.getElementById("loggerClientName").value.trim();
+  const title = document.getElementById("loggerTitle").value.trim();
+  const url = document.getElementById("loggerUrl").value.trim();
+  const category = document.getElementById("loggerCategory").value;
+  const theme = document.getElementById("loggerTheme").value;
+  const desc = document.getElementById("loggerDesc").value.trim();
+
+  if (!client || !title || !url) {
+    showToast("Please provide client name, portal title, and URL.", "warning", "Validation");
+    return;
+  }
+
+  const loggers = getClientLoggers();
+
+  // Determine icon based on category/theme
+  let icon = "🏢";
+  if (category.includes("Banking")) icon = "🏦";
+  else if (category.includes("Fibre")) icon = "⚡";
+  else if (category.includes("CRM")) icon = "💎";
+  else if (category.includes("Logistics")) icon = "🚚";
+
+  if (id) {
+    // Edit existing
+    const idx = loggers.findIndex(l => l.id === id);
+    if (idx !== -1) {
+      loggers[idx] = {
+        ...loggers[idx],
+        client,
+        title,
+        url,
+        category,
+        theme,
+        desc,
+        icon: loggers[idx].icon || icon
+      };
+      saveClientLoggers(loggers);
+      showToast(`Updated logger configuration for ${client}.`, "success", "Saved");
+    }
+  } else {
+    // Create new
+    const newId = "logger-" + Date.now();
+    const newLogger = {
+      id: newId,
+      client,
+      title,
+      url,
+      category,
+      theme,
+      icon,
+      badge: "Partner Portal",
+      desc,
+      isDefault: false
+    };
+    loggers.push(newLogger);
+    saveClientLoggers(loggers);
+    showToast(`Added new client logger for ${client}.`, "success", "Logger Added");
+  }
+
+  closeEditLoggerModal();
+  renderClientLoggers();
+}
+
+async function deleteClientLogger(id, name) {
+  const confirmed = await showConfirmModal(
+    `Are you sure you want to remove the logger configuration for "${name}"?`,
+    "Delete Client Logger",
+    "danger"
+  );
+
+  if (!confirmed) return;
+
+  let loggers = getClientLoggers();
+  loggers = loggers.filter(l => l.id !== id);
+  saveClientLoggers(loggers);
+
+  showToast(`Client logger for ${name} has been removed.`, "success", "Deleted");
+  renderClientLoggers();
+}
+
+async function resetClientLoggersToDefault() {
+  const confirmed = await showConfirmModal(
+    "Restore the 4 default official client portals (FNB Logsheet, Fibre Field Ops, SADV Logger, FibreGems CRM)? Custom loggers will be cleared.",
+    "Restore Defaults",
+    "warning"
+  );
+
+  if (!confirmed) return;
+
+  saveClientLoggers(DEFAULT_CLIENT_LOGGERS);
+  ACTIVE_LOGGER_CATEGORY = "ALL";
+  SEARCH_LOGGER_QUERY = "";
+
+  const searchInput = document.getElementById("searchClientLoggers");
+  if (searchInput) searchInput.value = "";
+
+  const pills = document.querySelectorAll("#loggerCategoryPills .category-pill");
+  pills.forEach((p, i) => {
+    if (i === 0) p.classList.add("active");
+    else p.classList.remove("active");
+  });
+
+  showToast("Restored official client portals to factory default.", "success", "Defaults Restored");
+  renderClientLoggers();
 }

@@ -33,6 +33,9 @@
         <button type="button" class="btn btn-secondary btn-sm" id="btnAdminDevice" onclick="openDeviceModal()">
           <span>💻</span> Device Checkout
         </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnAdminClientLoggers" onclick="switchAdminTab('loggers')">
+          <span>🏢</span> Client Loggers
+        </button>
         <button type="button" class="btn btn-primary btn-sm" id="btnRefreshData" onclick="loadAdminDashboard(true)">
           <span id="refreshIcon">🔄</span> Refresh
         </button>
@@ -134,6 +137,10 @@
       </button>
       <button type="button" id="tabBtnExport" class="nav-tab-btn" onclick="switchAdminTab('export')">
         <span>📑</span> Timesheet Exports
+      </button>
+      <button type="button" id="tabBtnLoggers" class="nav-tab-btn" onclick="switchAdminTab('loggers')">
+        <span>🏢</span> Client Loggers
+        <span id="tabBadgeLoggers" class="tab-badge tab-badge-info">4</span>
       </button>
     </nav>
 
@@ -478,6 +485,42 @@
       </div>
     </section>
 
+    <!-- TAB 9: CLIENT LOGGERS & EXTERNAL OPERATIONS HUB -->
+    <section id="contentTabLoggers" class="card hidden">
+      <div class="client-loggers-header">
+        <div class="client-loggers-title-wrap">
+          <h2><span>🏢</span> Partner Client Loggers & External Gateways</h2>
+          <p>Seamlessly access, launch, and manage external client timesheets, field ops, and CRM portals.</p>
+        </div>
+        <div class="flex gap-2" style="flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAddLoggerModal()">
+            <span>➕</span> Add Client Logger
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="resetClientLoggersToDefault()">
+            <span>🔄</span> Restore Defaults
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Toolbar -->
+      <div class="client-loggers-toolbar">
+        <div class="category-filter-pills" id="loggerCategoryPills">
+          <button type="button" class="category-pill active" onclick="filterLoggersByCategory('ALL', this)">All Portals</button>
+          <button type="button" class="category-pill" onclick="filterLoggersByCategory('Banking & Corporate', this)">Banking & Corporate</button>
+          <button type="button" class="category-pill" onclick="filterLoggersByCategory('Fibre & Infrastructure', this)">Fibre & Infrastructure</button>
+          <button type="button" class="category-pill" onclick="filterLoggersByCategory('CRM & Pipeline', this)">CRM & Pipeline</button>
+        </div>
+        <div class="filter-group ml-auto" style="min-width: 260px;">
+          <input type="text" id="searchClientLoggers" class="form-control" placeholder="Search client name, title, or URL..." oninput="handleSearchClientLoggers(this.value)">
+        </div>
+      </div>
+
+      <!-- Dynamic Grid of Client Loggers -->
+      <div class="client-loggers-grid" id="clientLoggersGrid">
+        <!-- Rendered dynamically by admin.js -->
+      </div>
+    </section>
+
     <!-- Footer Information -->
     <footer class="text-center mt-6 pt-4">
       <p class="text-xs text-dim">
@@ -695,6 +738,93 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeDeviceModal()">Cancel</button>
           <button type="submit" class="btn btn-primary" id="btnSubmitDevice">Confirm Checkout Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PREVIEW INLINE CLIENT LOGGER -->
+  <div id="previewLoggerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="previewLoggerTitle">
+    <div class="modal-dialog preview-portal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span id="previewLoggerIcon" style="font-size: 1.6rem;">🌐</span>
+          <div>
+            <h3 class="modal-title" id="previewLoggerTitle">Client Logger Portal</h3>
+            <p class="text-xs text-muted" id="previewLoggerSubtitle">Active client telemetry interface</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <a id="previewExternalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <span>↗</span> Open in New Window
+          </a>
+          <button type="button" class="modal-close" onclick="closePreviewLoggerModal()" aria-label="Close Modal">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body preview-portal-body">
+        <div id="previewLoader" class="flex flex-col items-center justify-center p-8 text-center" style="height: 100%; position: absolute; inset: 0; background: #020617; z-index: 5;">
+          <div class="spinner-disc mb-3"></div>
+          <p class="text-sm font-bold text-main" id="previewLoaderText">Connecting to secure client portal...</p>
+          <p class="text-xs text-muted mt-1">If the remote portal denies inline embedding due to third-party framing policies, use "Open in New Window".</p>
+        </div>
+        <iframe id="previewLoggerIframe" class="preview-portal-iframe" src="" allow="geolocation; camera; microphone; clipboard-read; clipboard-write;" onload="handleIframeLoaded()"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT CLIENT LOGGER -->
+  <div id="editLoggerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editLoggerModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="editLoggerModalTitle">🏢 Configure Client Logger</h3>
+        <button type="button" class="modal-close" onclick="closeEditLoggerModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="editLoggerForm" onsubmit="handleSaveClientLogger(event)">
+        <input type="hidden" id="editLoggerId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="loggerClientName">Client / Organization Name *</label>
+            <input type="text" id="loggerClientName" class="form-control" placeholder="e.g. First National Bank, SADV, FibreGems..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loggerTitle">Logger Portal Title *</label>
+            <input type="text" id="loggerTitle" class="form-control" placeholder="e.g. Field Operations & Attendance Hub" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loggerUrl">Target Endpoint / Web Portal URL *</label>
+            <input type="url" id="loggerUrl" class="form-control" placeholder="https://..." required>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="loggerCategory">Category / Industry</label>
+              <select id="loggerCategory" class="form-control">
+                <option value="Banking & Corporate">Banking & Corporate</option>
+                <option value="Fibre & Infrastructure">Fibre & Infrastructure</option>
+                <option value="CRM & Pipeline">CRM & Pipeline</option>
+                <option value="Field Logistics">Field Logistics</option>
+                <option value="Telecommunications">Telecommunications</option>
+                <option value="Contractor Management">Contractor Management</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="loggerTheme">Accent Color Theme</label>
+              <select id="loggerTheme" class="form-control">
+                <option value="teal">FNB Teal (#00a896)</option>
+                <option value="blue">Electric Blue (#0284c7)</option>
+                <option value="orange">SADV Orange (#ea580c)</option>
+                <option value="purple">FibreGems Purple (#a855f7)</option>
+                <option value="emerald">Emerald Green (#10b981)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loggerDesc">Portal Description / Guidelines</label>
+            <textarea id="loggerDesc" class="form-control" placeholder="Provide context regarding contract requirements, site deployments, or instructions..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditLoggerModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveLogger">Save Client Logger</button>
         </div>
       </form>
     </div>
