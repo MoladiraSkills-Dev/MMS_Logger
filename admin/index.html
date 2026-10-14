@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MolāDira Skills (MMS) Corporate Admin Operations Hub. Geolocation Shift Auditing, Timesheets, Leave & Device Approvals.">
+  <title>MolāDira Skills - MMS Admin Operations Hub</title>
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <div class="admin-container">
+    
+    <!-- Admin Header Bar -->
+    <header class="admin-header">
+      <div class="portal-brand">
+        <div class="brand-mini-badge pulse-glow">MMS</div>
+        <div>
+          <h1 class="text-xl font-bold">MolāDira <span class="text-gradient">Skills</span></h1>
+          <p class="text-xs" id="adminSubtitle">Operations & Staff Attendance Hub &bull; BBBEE Level 1</p>
+        </div>
+      </div>
+
+      <div class="admin-header-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="btnToggleSelfClock" onclick="toggleAdminAttendancePanel()">
+          <span>⏱️</span> Attendance Logging
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnAdminLeave" onclick="openLeaveModal()">
+          <span>📅</span> Apply Leave
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnAdminDevice" onclick="openDeviceModal()">
+          <span>💻</span> Device Checkout
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnRefreshData" onclick="loadAdminDashboard(true)">
+          <span>🔄</span> Refresh
+        </button>
+        <button type="button" class="btn btn-danger btn-sm" id="btnAdminLogout" onclick="logout()">
+          <span>🚪</span> Sign Out
+        </button>
+      </div>
+    </header>
+
+    <!-- Global Feedback Alert Container -->
+    <div id="adminAlert" class="alert hidden" role="alert"></div>
+
+    <!-- Admin Self-Attendance Panel (Collapsible) -->
+    <section id="adminAttendancePanel" class="admin-attendance-panel hidden" aria-labelledby="adminClockHeading">
+      <div class="card-header">
+        <h2 class="card-title text-base" id="adminClockHeading">
+          <span>📍</span> Admin Self-Attendance Telemetry
+        </h2>
+        <span class="badge badge-info" id="adminSelfStatusBadge">Ready</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button type="button" class="btn-tactile btn-tactile-in" onclick="handleAdminSelfClock('Clock In')">
+          <span class="btn-tactile-icon">📍</span>
+          <span>Clock In (Admin)</span>
+          <span class="btn-tactile-subtitle">Log morning shift start with GPS</span>
+        </button>
+        <button type="button" class="btn-tactile btn-tactile-out" onclick="handleAdminSelfClock('Clock Out')">
+          <span class="btn-tactile-icon">🏁</span>
+          <span>Clock Out (Admin)</span>
+          <span class="btn-tactile-subtitle">Log shift conclusion with GPS</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Top KPI Stat Counters Grid -->
+    <section class="kpi-grid" aria-label="Key Performance Indicators">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Staff</div>
+        <div class="kpi-value" id="kpiTotalStaff">--</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Clocked In Today</div>
+        <div class="kpi-value" id="kpiClockedIn" style="color: var(--color-success);">--</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Clocked Out Today</div>
+        <div class="kpi-value" id="kpiClockedOut" style="color: var(--mms-orange);">--</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">On Leave Today</div>
+        <div class="kpi-value" id="kpiOnLeave" style="color: var(--mms-pink);">--</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pending Devices</div>
+        <div class="kpi-value" id="kpiPendingDevices" style="color: var(--color-info);">--</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="admin-tabs-bar" aria-label="Admin Navigation Tabs">
+      <button type="button" id="tabBtnLogs" class="nav-tab-btn active" onclick="switchAdminTab('logs')">
+        <span>📋</span> Activity Logs
+      </button>
+      <button type="button" id="tabBtnDaily" class="nav-tab-btn" onclick="switchAdminTab('daily')">
+        <span>⏱️</span> Daily Shifts
+      </button>
+      <button type="button" id="tabBtnWeekly" class="nav-tab-btn" onclick="switchAdminTab('weekly')">
+        <span>📊</span> Weekly Hours
+      </button>
+      <button type="button" id="tabBtnMonthly" class="nav-tab-btn" onclick="switchAdminTab('monthly')">
+        <span>📈</span> Monthly Totals
+      </button>
+      <button type="button" id="tabBtnLeave" class="nav-tab-btn" onclick="switchAdminTab('leave')">
+        <span>🌴</span> Leave Requests
+      </button>
+      <button type="button" id="tabBtnDevice" class="nav-tab-btn" onclick="switchAdminTab('device')">
+        <span>📦</span> Device Checkouts
+      </button>
+      <button type="button" id="tabBtnUsers" class="nav-tab-btn" onclick="switchAdminTab('users')">
+        <span>👥</span> Staff Directory
+      </button>
+      <button type="button" id="tabBtnExport" class="nav-tab-btn" onclick="switchAdminTab('export')">
+        <span>📑</span> Timesheet Exports
+      </button>
+    </nav>
+
+    <!-- TAB 1: ACTIVITY LOGS -->
+    <section id="contentTabLogs" class="card">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterLogDate">Date:</label>
+          <input type="date" id="filterLogDate" class="form-control" style="width: auto;" onchange="applyLogFilters()">
+          
+          <label class="form-label mb-0" for="filterLogAction">Action:</label>
+          <select id="filterLogAction" class="form-control" style="width: auto;" onchange="applyLogFilters()">
+            <option value="ALL">All Actions</option>
+            <option value="Clock In">Clock In</option>
+            <option value="Clock Out">Clock Out</option>
+          </select>
+        </div>
+
+        <div class="search-wrapper" style="min-width: 260px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="filterLogSearch" class="form-control" placeholder="Search employee name or email..." oninput="applyLogFilters()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminLogsTable">
+          <thead>
+            <tr>
+              <th>Log ID</th>
+              <th>Employee Name</th>
+              <th>Date & Time</th>
+              <th>Action</th>
+              <th>Physical Location (Reverse Geocoded)</th>
+              <th>Audit Trail</th>
+            </tr>
+          </thead>
+          <tbody id="adminLogsBody">
+            <tr>
+              <td colspan="6" class="table-empty">Loading Activity Logs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: DAILY SUMMARIES -->
+    <section id="contentTabDaily" class="card hidden">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterDailyDate">Shift Date:</label>
+          <input type="date" id="filterDailyDate" class="form-control" style="width: auto;" onchange="applyDailyFilters()">
+
+          <label class="form-label mb-0" for="filterDailyStatus">Shift Status:</label>
+          <select id="filterDailyStatus" class="form-control" style="width: auto;" onchange="applyDailyFilters()">
+            <option value="ALL">All Statuses</option>
+            <option value="Completed">Completed</option>
+            <option value="In Progress">In Progress</option>
+            <option value="No Clock In">No Clock In</option>
+          </select>
+        </div>
+
+        <div class="search-wrapper" style="min-width: 260px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="filterDailySearch" class="form-control" placeholder="Search employee..." oninput="applyDailyFilters()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminDailyTable">
+          <thead>
+            <tr>
+              <th>Summary ID</th>
+              <th>Employee Name</th>
+              <th>Date</th>
+              <th>Actual In / Out</th>
+              <th>Floor In / Out</th>
+              <th>Worked Hours</th>
+              <th>Overtime</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminDailyBody">
+            <tr>
+              <td colspan="9" class="table-empty">Loading Daily Summaries...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 3: WEEKLY SUMMARIES -->
+    <section id="contentTabWeekly" class="card hidden">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterWeeklySearch">Search Employee:</label>
+          <input type="text" id="filterWeeklySearch" class="form-control" placeholder="Filter by name/email..." oninput="applyWeeklyFilters()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminWeeklyTable">
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Email</th>
+              <th>ISO Week</th>
+              <th>Regular Hours</th>
+              <th>Overtime Hours</th>
+              <th>Days Worked</th>
+              <th>BCEA Compliance Status</th>
+              <th>Last Recalculated</th>
+            </tr>
+          </thead>
+          <tbody id="adminWeeklyBody">
+            <tr>
+              <td colspan="8" class="table-empty">Loading Weekly Summaries...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 4: MONTHLY SUMMARIES -->
+    <section id="contentTabMonthly" class="card hidden">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterMonthlyMonth">Month:</label>
+          <input type="month" id="filterMonthlyMonth" class="form-control" style="width: auto;" onchange="applyMonthlyFilters()">
+        </div>
+
+        <div class="search-wrapper" style="min-width: 260px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="filterMonthlySearch" class="form-control" placeholder="Search employee..." oninput="applyMonthlyFilters()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminMonthlyTable">
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Email</th>
+              <th>Month</th>
+              <th>Total Hours Worked</th>
+              <th>Total Overtime</th>
+              <th>Days Worked</th>
+              <th>Last Synchronized</th>
+            </tr>
+          </thead>
+          <tbody id="adminMonthlyBody">
+            <tr>
+              <td colspan="7" class="table-empty">Loading Monthly Summaries...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 5: LEAVE MANAGEMENT -->
+    <section id="contentTabLeave" class="card hidden">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterLeaveStatus">Application Status:</label>
+          <select id="filterLeaveStatus" class="form-control" style="width: auto;" onchange="applyLeaveFilters()">
+            <option value="ALL">All Applications</option>
+            <option value="Pending" selected>Pending Review</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminLeaveTable">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Employee Name</th>
+              <th>Leave Category</th>
+              <th>Leave Period</th>
+              <th>Applied Date</th>
+              <th>Current Status</th>
+              <th>Approval Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminLeaveBody">
+            <tr>
+              <td colspan="7" class="table-empty">Loading Leave Applications...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 6: DEVICE CHECKOUTS -->
+    <section id="contentTabDevice" class="card hidden">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterDeviceStatus">Request Status:</label>
+          <select id="filterDeviceStatus" class="form-control" style="width: auto;" onchange="applyDeviceFilters()">
+            <option value="ALL">All Checkouts</option>
+            <option value="Pending" selected>Pending Review</option>
+            <option value="Approved">Approved / Active</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminDeviceTable">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Employee</th>
+              <th>Equipment / Asset Details</th>
+              <th>Checkout Duration</th>
+              <th>Operational Reason</th>
+              <th>Status</th>
+              <th>Approval Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminDeviceBody">
+            <tr>
+              <td colspan="7" class="table-empty">Loading Equipment Checkouts...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 7: STAFF DIRECTORY -->
+    <section id="contentTabUsers" class="card hidden">
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="form-label mb-0" for="filterStaffStatus">Standing:</label>
+          <select id="filterStaffStatus" class="form-control" style="width: auto;" onchange="applyStaffFilters()">
+            <option value="ALL">All Standings</option>
+            <option value="Verified">Verified</option>
+            <option value="Blocked">Blocked</option>
+          </select>
+        </div>
+
+        <div class="search-wrapper" style="min-width: 260px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="filterStaffSearch" class="form-control" placeholder="Search staff member..." oninput="applyStaffFilters()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" id="adminUsersTable">
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Corporate Email</th>
+              <th>Role</th>
+              <th>Account Standing</th>
+              <th>Work Status</th>
+              <th>Account Controls</th>
+            </tr>
+          </thead>
+          <tbody id="adminUsersBody">
+            <tr>
+              <td colspan="6" class="table-empty">Loading Staff Directory...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 8: TIMESHEET EXPORTS HUB -->
+    <section id="contentTabExport" class="card hidden">
+      <div class="export-card-grid">
+        
+        <div class="export-control-panel">
+          <h2 class="card-title text-base mb-4">
+            <span>📑</span> Export Parameters
+          </h2>
+
+          <div class="form-group">
+            <label class="form-label" for="exportStaffSelect">Target Staff Member</label>
+            <select id="exportStaffSelect" class="form-control">
+              <option value="ALL">All Employees (Batch ZIP Archive)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="exportStartDate">First Week Start Date</label>
+            <input type="date" id="exportStartDate" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="exportEndDate">Timesheet End Date</label>
+            <input type="date" id="exportEndDate" class="form-control">
+          </div>
+
+          <div class="flex flex-col gap-2 mt-4">
+            <button type="button" class="btn btn-primary" onclick="triggerTimesheetExport('pdf')">
+              <span>📄</span> Export Official PDF
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="triggerTimesheetExport('csv')">
+              <span>📊</span> Export Raw CSV Sheet
+            </button>
+            <button type="button" class="btn btn-success" onclick="triggerZipArchiveExport()">
+              <span>📦</span> Batch Download ZIP Archive
+            </button>
+          </div>
+        </div>
+
+        <div class="export-preview-panel">
+          <h2 class="card-title text-base mb-2">
+            <span>ℹ️</span> Timesheet Export Specifications
+          </h2>
+          <p class="text-xs text-muted mb-4">
+            Generated timesheets strictly adhere to MolāDira Skills compliance standards:
+          </p>
+
+          <ul style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.8; margin-left: 1.25rem;">
+            <li><strong>Floor Times Mandatory:</strong> Start and End times on PDF and CSV are drawn directly from the audited Floor Time calculations.</li>
+            <li><strong>Standard Anchors:</strong> Non-edited shifts anchor to 08:00 - 17:00 (13:00 on Saturdays) with 1-hour lunch deducted for shifts over 5 hours.</li>
+            <li><strong>Overtime Masking:</strong> Overtime is masked to 0 hours on the PDF unless an Admin explicitly edited the shift, where overtime is mathematically rounded to whole hours.</li>
+            <li><strong>Leave Abbreviations:</strong> Leave days are dynamically annotated as <code>SL</code> (Sick), <code>AL</code> (Annual), or <code>FL</code> (Family).</li>
+            <li><strong>Sign-off Section:</strong> Includes mandatory Employee Signature and Manager/Supervisor verification spaces.</li>
+          </ul>
+
+          <div id="exportStatusBox" class="alert alert-info mt-auto mb-0 hidden">
+            <span id="exportStatusText">Preparing file generation...</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Footer Information -->
+    <footer class="text-center mt-6 pt-4">
+      <p class="text-xs text-dim">
+        MolāDira Skills (Pty) Ltd &bull; Geolocation Attendance & Shift Management Platform &bull; BBBEE Level 1 Certified
+      </p>
+    </footer>
+
+  </div>
+
+  <!-- MODAL: EDIT SHIFT -->
+  <div id="editShiftModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editShiftTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="editShiftTitle">✏️ Admin Edit Shift Telemetry</h3>
+        <button type="button" class="modal-close" onclick="closeEditShiftModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="editShiftForm" onsubmit="handleEditShiftSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="editShiftId">
+          <input type="hidden" id="editShiftEmail">
+          <input type="hidden" id="editShiftDate">
+
+          <div id="editShiftAlert" class="alert hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label class="form-label">Employee / Date</label>
+            <div id="editShiftInfo" class="font-bold text-sm text-gradient">--</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="editClockIn">Adjusted Clock-In</label>
+              <input type="time" id="editClockIn" step="1" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editClockOut">Adjusted Clock-Out</label>
+              <input type="time" id="editClockOut" step="1" class="form-control" required>
+            </div>
+          </div>
+
+          <p class="text-xs text-dim mt-2">
+            ⚠️ <em>Note: Admin edits set <code>isAdminEdit = true</code>, which overrides baseline 08:00/17:00 anchors and unlocks exact early departures and mathematical overtime on timesheets.</em>
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditShiftModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveShiftEdit">Commit Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT STAFF PROFILE -->
+  <div id="editStaffModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editStaffTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="editStaffTitle">👤 Update Staff Profile</h3>
+        <button type="button" class="modal-close" onclick="closeEditStaffModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="editStaffForm" onsubmit="handleEditStaffSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="editStaffEmail">
+          <div id="editStaffAlert" class="alert hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label class="form-label">Email Account</label>
+            <input type="text" id="editStaffEmailDisplay" class="form-control" disabled>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="editStaffFirstName">First Name</label>
+              <input type="text" id="editStaffFirstName" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editStaffLastName">Last Name</label>
+              <input type="text" id="editStaffLastName" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editStaffStanding">Account Standing</label>
+            <select id="editStaffStanding" class="form-control" required>
+              <option value="Verified">Verified (Active Access)</option>
+              <option value="Blocked">Blocked (Access Denied)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditStaffModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RESET PASSWORD -->
+  <div id="resetPasswordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="resetPasswordTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="resetPasswordTitle">🔑 Reset Staff Password</h3>
+        <button type="button" class="modal-close" onclick="closeResetPasswordModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="resetPasswordForm" onsubmit="handleResetPasswordSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="resetPasswordEmail">
+          <div id="resetPasswordAlert" class="alert hidden" role="alert"></div>
+
+          <p class="text-sm mb-3">Resetting password for: <strong id="resetPasswordUserLabel">--</strong></p>
+
+          <div class="form-group">
+            <label class="form-label" for="newPassword">New Password</label>
+            <input type="password" id="newPassword" class="form-control" placeholder="Min 6 characters" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirmNewPassword">Confirm Password</label>
+            <input type="password" id="confirmNewPassword" class="form-control" placeholder="Re-enter password" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeResetPasswordModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared Leave Request Modal (Usable by Admin) -->
+  <div id="leaveModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="leaveModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="leaveModalTitle">📅 Apply for Leave</h3>
+        <button type="button" class="modal-close" onclick="closeLeaveModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="leaveForm" onsubmit="handleLeaveSubmit(event, () => loadAdminDashboard(true))">
+        <div class="modal-body">
+          <div id="leaveAlert" class="alert hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="leaveType">Leave Classification</label>
+            <select id="leaveType" class="form-control" required>
+              <option value="Sick">Sick Leave (SL)</option>
+              <option value="Annual">Annual Leave (AL)</option>
+              <option value="Family Responsibility">Family Responsibility (FL)</option>
+              <option value="Study">Study Leave</option>
+              <option value="Maternity/Paternity">Parental Leave</option>
+              <option value="Unpaid">Unpaid Leave</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="leaveStartDate">Start Date</label>
+              <input type="date" id="leaveStartDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="leaveEndDate">End Date</label>
+              <input type="date" id="leaveEndDate" class="form-control" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeLeaveModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared Device Checkout Modal (Usable by Admin) -->
+  <div id="deviceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="deviceModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="deviceModalTitle">💻 Device & Equipment Checkout</h3>
+        <button type="button" class="modal-close" onclick="closeDeviceModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="deviceForm" onsubmit="handleDeviceSubmit(event, () => loadAdminDashboard(true))">
+        <div class="modal-body">
+          <div id="deviceAlert" class="alert hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceCategory">Equipment Type</label>
+            <select id="deviceCategory" class="form-control" required>
+              <option value="Laptop">Laptop / Notebook</option>
+              <option value="Tablet">Tablet Device</option>
+              <option value="Mobile Phone">Mobile Testing Phone</option>
+              <option value="4G/LTE Router">4G / LTE Field Router</option>
+              <option value="Barcode/RFID Scanner">Barcode / RFID Scanner</option>
+              <option value="Other Tool">Specialized Tool / Peripheral</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceIdentifier">Asset Tag / Serial / Model</label>
+            <input type="text" id="deviceIdentifier" class="form-control" placeholder="e.g. MMS-LT-042 / Dell Latitude 5420" required>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="deviceStartDate">Checkout Date</label>
+              <input type="date" id="deviceStartDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="deviceEndDate">Expected Return</label>
+              <input type="date" id="deviceEndDate" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceReason">Business Purpose / Assignment</label>
+            <textarea id="deviceReason" class="form-control" placeholder="Specify project, site visit, or assignment reason..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeDeviceModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Checkout Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../shared/js/api.js"></script>
+  <script src="../shared/js/leave_device.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

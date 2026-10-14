@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MolāDira Skills (MMS) Employee Attendance, Shift Logging, Leave Application, and Device Checkout Portal.">
+  <title>MolāDira Skills - MMS Employee Attendance & Resource Portal</title>
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="employee.css">
+</head>
+<body>
+
+  <div class="employee-container">
+    
+    <!-- Header Bar -->
+    <header class="portal-header">
+      <div class="portal-brand">
+        <div class="brand-mini-badge pulse-glow">MMS</div>
+        <div>
+          <h1 class="text-lg font-bold">MolāDira <span class="text-gradient">Skills</span></h1>
+          <p class="text-xs" id="employeePortalTitle">Staff Attendance & Resource Portal</p>
+        </div>
+      </div>
+
+      <div class="user-profile-badge">
+        <div class="text-right">
+          <p class="text-sm font-bold text-main" id="userDisplayName">Loading Employee...</p>
+          <span class="badge badge-gradient" id="userRoleBadge">Employee</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnEmployeeLogout" onclick="logout()" title="Sign out of portal">
+          Sign Out
+        </button>
+      </div>
+    </header>
+
+    <!-- Global Feedback Alert Container -->
+    <div id="employeeAlert" class="alert hidden" role="alert"></div>
+
+    <!-- Live Digital Clock & Calendar -->
+    <section class="clock-widget-card" aria-label="Current Workspace Time">
+      <div class="live-time-display font-mono" id="liveClockDisplay">--:--:--</div>
+      <div class="live-date-display" id="liveDateDisplay">Loading Date...</div>
+    </section>
+
+    <!-- Tactile Clock In / Clock Out Action Buttons -->
+    <section class="action-buttons-grid" aria-label="Attendance Actions">
+      <button type="button" class="btn-tactile btn-tactile-in" id="btnClockIn" onclick="handleClockAction('Clock In')">
+        <span class="btn-tactile-icon">📍</span>
+        <span>Clock In</span>
+        <span class="btn-tactile-subtitle" id="clockInSubtext">Record shift start & GPS</span>
+      </button>
+
+      <button type="button" class="btn-tactile btn-tactile-out" id="btnClockOut" onclick="handleClockAction('Clock Out')">
+        <span class="btn-tactile-icon">🏁</span>
+        <span>Clock Out</span>
+        <span class="btn-tactile-subtitle" id="clockOutSubtext">Conclude daily shift & GPS</span>
+      </button>
+    </section>
+
+    <!-- Secondary Resource Actions: Request Leave & Checkout Device -->
+    <section class="secondary-actions-bar" aria-label="Resource Actions">
+      <button type="button" class="btn-feature btn-feature-leave" id="btnOpenLeave" onclick="openLeaveModal()">
+        <div class="btn-feature-icon">📅</div>
+        <div>
+          <div class="btn-feature-title">Apply for Leave</div>
+          <div class="btn-feature-sub">Sick, Annual, Family & Special leave</div>
+        </div>
+      </button>
+
+      <button type="button" class="btn-feature btn-feature-device" id="btnOpenDevice" onclick="openDeviceModal()">
+        <div class="btn-feature-icon">💻</div>
+        <div>
+          <div class="btn-feature-title">Checkout Device</div>
+          <div class="btn-feature-sub">Request Laptop, Scanner or Equipment</div>
+        </div>
+      </button>
+    </section>
+
+    <!-- Today's Shift Status Summary Card -->
+    <section class="card mb-6" aria-labelledby="todayShiftHeading">
+      <div class="card-header">
+        <h2 class="card-title" id="todayShiftHeading">
+          <span>⏱️</span> Today's Shift Telemetry
+        </h2>
+        <span class="badge badge-info" id="shiftStatusBadge">Checking Shift...</span>
+      </div>
+
+      <div class="shift-status-grid">
+        <div class="shift-stat-box">
+          <div class="shift-stat-label">Actual Clock In</div>
+          <div class="shift-stat-value" id="dispActualIn">--:--</div>
+        </div>
+        <div class="shift-stat-box">
+          <div class="shift-stat-label">Floor In (08:00)</div>
+          <div class="shift-stat-value" id="dispFloorIn">--:--</div>
+        </div>
+        <div class="shift-stat-box">
+          <div class="shift-stat-label">Actual Clock Out</div>
+          <div class="shift-stat-value" id="dispActualOut">--:--</div>
+        </div>
+        <div class="shift-stat-box">
+          <div class="shift-stat-label">Net Worked Hours</div>
+          <div class="shift-stat-value" id="dispNetHours">--</div>
+        </div>
+      </div>
+
+      <!-- Real-time Location Indicator -->
+      <div class="location-status-banner" id="locationStatusBanner">
+        <div class="location-indicator-dot"></div>
+        <span id="locationStatusText">Ready to acquire GPS coordinates via device sensor.</span>
+      </div>
+    </section>
+
+    <!-- Tabs for Activity Logs, Leave History & Device History -->
+    <section class="card" aria-label="Employee Activity and Requests">
+      <nav class="nav-tabs" aria-label="Employee Tabs">
+        <button type="button" id="tabBtnLogs" class="nav-tab-btn active" onclick="switchEmpTab('logs')">
+          <span>📋</span> Recent Logs
+        </button>
+        <button type="button" id="tabBtnLeaves" class="nav-tab-btn" onclick="switchEmpTab('leaves')">
+          <span>🌴</span> My Leaves
+        </button>
+        <button type="button" id="tabBtnDevices" class="nav-tab-btn" onclick="switchEmpTab('devices')">
+          <span>📦</span> My Devices
+        </button>
+      </nav>
+
+      <!-- Tab Content: Recent Activity Logs -->
+      <div id="tabContentLogs" class="mt-4">
+        <div class="table-responsive">
+          <table class="table" id="empLogsTable">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Action</th>
+                <th>Resolved Location</th>
+              </tr>
+            </thead>
+            <tbody id="empLogsBody">
+              <tr>
+                <td colspan="3" class="table-empty">Loading recent telemetry events...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: My Leaves -->
+      <div id="tabContentLeaves" class="mt-4 hidden">
+        <div class="table-responsive">
+          <table class="table" id="empLeavesTable">
+            <thead>
+              <tr>
+                <th>Leave Type</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th>Date Applied</th>
+              </tr>
+            </thead>
+            <tbody id="empLeavesBody">
+              <tr>
+                <td colspan="5" class="table-empty">No leave requests found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: My Devices -->
+      <div id="tabContentDevices" class="mt-4 hidden">
+        <div class="table-responsive">
+          <table class="table" id="empDevicesTable">
+            <thead>
+              <tr>
+                <th>Device Asset</th>
+                <th>Period</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Date Applied</th>
+              </tr>
+            </thead>
+            <tbody id="empDevicesBody">
+              <tr>
+                <td colspan="5" class="table-empty">No device requests found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer Information -->
+    <footer class="text-center mt-6 pt-4">
+      <p class="text-xs text-dim">
+        MolāDira Skills (Pty) Ltd &bull; Geolocation Attendance System &bull; All GPS logs encrypted and audited
+      </p>
+    </footer>
+
+  </div>
+
+  <!-- Shared Leave Request Modal -->
+  <div id="leaveModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="leaveModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="leaveModalTitle">📅 Apply for Leave</h3>
+        <button type="button" class="modal-close" onclick="closeLeaveModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="leaveForm" onsubmit="handleLeaveSubmit(event, loadEmployeeData)">
+        <div class="modal-body">
+          <div id="leaveAlert" class="alert hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="leaveType">Leave Classification</label>
+            <select id="leaveType" class="form-control" required>
+              <option value="Sick">Sick Leave (SL)</option>
+              <option value="Annual">Annual Leave (AL)</option>
+              <option value="Family Responsibility">Family Responsibility (FL)</option>
+              <option value="Study">Study Leave</option>
+              <option value="Maternity/Paternity">Parental Leave</option>
+              <option value="Unpaid">Unpaid Leave</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="leaveStartDate">Start Date</label>
+              <input type="date" id="leaveStartDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="leaveEndDate">End Date</label>
+              <input type="date" id="leaveEndDate" class="form-control" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeLeaveModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitLeave">Submit Application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared Device Checkout Modal -->
+  <div id="deviceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="deviceModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="deviceModalTitle">💻 Device & Equipment Checkout</h3>
+        <button type="button" class="modal-close" onclick="closeDeviceModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="deviceForm" onsubmit="handleDeviceSubmit(event, loadEmployeeData)">
+        <div class="modal-body">
+          <div id="deviceAlert" class="alert hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceCategory">Equipment Type</label>
+            <select id="deviceCategory" class="form-control" required>
+              <option value="Laptop">Laptop / Notebook</option>
+              <option value="Tablet">Tablet Device</option>
+              <option value="Mobile Phone">Mobile Testing Phone</option>
+              <option value="4G/LTE Router">4G / LTE Field Router</option>
+              <option value="Barcode/RFID Scanner">Barcode / RFID Scanner</option>
+              <option value="Other Tool">Specialized Tool / Peripheral</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceIdentifier">Asset Tag / Serial / Model</label>
+            <input type="text" id="deviceIdentifier" class="form-control" placeholder="e.g. MMS-LT-042 / Dell Latitude 5420" required>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label" for="deviceStartDate">Checkout Date</label>
+              <input type="date" id="deviceStartDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="deviceEndDate">Expected Return</label>
+              <input type="date" id="deviceEndDate" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceReason">Business Purpose / Assignment</label>
+            <textarea id="deviceReason" class="form-control" placeholder="Specify project, site visit, or assignment reason..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeDeviceModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitDevice">Confirm Checkout Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../shared/js/api.js"></script>
+  <script src="../shared/js/leave_device.js"></script>
+  <script src="employee.js"></script>
+</body>
+</html>
