@@ -62,18 +62,22 @@ async function loadEmployeeData() {
   try {
     const res = await callApi("getEmployeePortalData", { email });
 
-    if (res.status === "success") {
-      renderTodayShift(res.todayShift);
-      renderRecentLogs(res.recentLogs || []);
-      renderMyLeaves(res.leaveRequests || []);
-      renderMyDevices(res.deviceRequests || []);
-      updateTactileButtonStates(res.todayShift);
-      updateShiftProgressTimeline(res.todayShift);
+    if (res && res.status === "success") {
+      try { renderTodayShift(res.todayShift); } catch (e) { console.error("Error rendering today shift:", e); }
+      try { renderRecentLogs(res.recentLogs || []); } catch (e) { console.error("Error rendering recent logs:", e); }
+      try { renderMyLeaves(res.leaveRequests || []); } catch (e) { console.error("Error rendering leaves:", e); }
+      try { renderMyDevices(res.deviceRequests || []); } catch (e) { console.error("Error rendering devices:", e); }
+      try { updateTactileButtonStates(res.todayShift); } catch (e) { console.error("Error updating button states:", e); }
+      try { updateShiftProgressTimeline(res.todayShift); } catch (e) { console.error("Error updating shift progress:", e); }
     } else {
-      console.warn("Could not retrieve employee portal data:", res.message);
+      const serverStatus = res ? (res.status || "Unknown") : "No response";
+      const errMsg = (res && res.message) ? res.message : `Could not load telemetry (Status: ${serverStatus})`;
+      console.warn("Could not retrieve employee portal data:", errMsg);
+      showToast(errMsg, "warning", "Sync Issue");
     }
   } catch (err) {
     console.error("Failed to load employee portal data:", err);
+    showToast("Connection issue: " + err.message, "danger", "Database Error");
   }
 }
 

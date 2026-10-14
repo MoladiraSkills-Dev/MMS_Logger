@@ -12,8 +12,11 @@ const SESSION_STORAGE_KEY = "mms_logger_session";
 
 /**
  * Core Asynchronous Fetch Client
- * Uses POST + application/x-www-form-urlencoded with URLSearchParams('payload')
- * to seamlessly avoid CORS preflight failures on Google Apps Script Web Apps.
+ * High-resiliency multi-tier transport for Google Apps Script Web Apps:
+ * 1. Sets credentials: "omit" so Google Account cookies don't trigger 302 account-routing redirects.
+ * 2. Uses standardized string body with explicit CORS mode.
+ * 3. Detects if Google Apps Script downgraded POST to doGet ({ status: "Operational" })
+ *    and seamlessly executes fallback transport mechanisms.
  */
 async function callApi(method, args = {}) {
   if (!APPS_SCRIPT_WEB_APP_URL || APPS_SCRIPT_WEB_APP_URL.includes("CHANGE_ME")) {
@@ -23,21 +26,68 @@ async function callApi(method, args = {}) {
   const payload = JSON.stringify({ method, args });
   const params = new URLSearchParams();
   params.append("payload", payload);
+  const formBody = params.toString();
+
+  const fetchJson = async (url, fetchOptions) => {
+    const res = await fetch(url, fetchOptions);
+    if (!res.ok) {
+      throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+    }
+    return await res.json();
+  };
 
   try {
-    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+    // Tier 1: Standard CORS form-urlencoded POST with credentials omitted
+    let json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
       method: "POST",
+      mode: "cors",
+      credentials: "omit",
+      redirect: "follow",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+        "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: params
+      body: formBody
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+    // Check if Google Apps Script returned operational handshake from doGet instead of doPost
+    const isOperationalHandshake = json && json.status === "Operational" && !json.logs && !json.summaries && !json.todayShift;
+    
+    if (isOperationalHandshake) {
+      console.warn(`[MMS API] Detected doGet operational handshake for "${method}". Initiating fallback transports...`);
+
+      // Tier 2: text/plain raw JSON POST (CORS simple request, bypasses form parser)
+      try {
+        json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
+          method: "POST",
+          mode: "cors",
+          credentials: "omit",
+          redirect: "follow",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: payload
+        });
+      } catch (fb1Err) {
+        console.warn("[MMS API] text/plain fallback error:", fb1Err);
+      }
+
+      // Tier 3: GET query parameter (if payload length permits)
+      if (json && json.status === "Operational") {
+        try {
+          const sep = APPS_SCRIPT_WEB_APP_URL.includes("?") ? "&" : "?";
+          const getUrl = `${APPS_SCRIPT_WEB_APP_URL}${sep}payload=${encodeURIComponent(payload)}`;
+          json = await fetchJson(getUrl, {
+            method: "GET",
+            mode: "cors",
+            credentials: "omit",
+            redirect: "follow"
+          });
+        } catch (fb2Err) {
+          console.warn("[MMS API] GET query fallback error:", fb2Err);
+        }
+      }
     }
 
-    const json = await response.json();
     return json;
   } catch (error) {
     console.error(`MMS API Call [${method}] Error:`, error);

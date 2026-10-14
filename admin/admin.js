@@ -117,7 +117,7 @@ async function loadAdminDashboard(showToastFeedback = false) {
     showLoader(false);
     if (refreshIcon) refreshIcon.classList.remove("spin-icon");
 
-    if (res.status === "success") {
+    if (res && res.status === "success") {
       CACHED_LOGS = res.logs || [];
       CACHED_DAILY = res.summaries || [];
       CACHED_WEEKLY = res.weeklySummaries || [];
@@ -127,26 +127,33 @@ async function loadAdminDashboard(showToastFeedback = false) {
       CACHED_STAFF = res.employees || [];
 
       // Update KPI Stat Counters & Tab Badges
-      updateKpis(res);
+      try { updateKpis(res); } catch (e) { console.error("Error updating KPIs:", e); }
 
       // Populate Export Staff Dropdown
-      populateExportStaffDropdown(CACHED_STAFF);
+      try { populateExportStaffDropdown(CACHED_STAFF); } catch (e) { console.error("Error populating staff dropdown:", e); }
 
-      // Render Tables with active filters
-      applyLogFilters();
-      applyDailyFilters();
-      applyWeeklyFilters();
-      applyMonthlyFilters();
-      applyLeaveFilters();
-      applyDeviceFilters();
-      applyStaffFilters();
+      // Render Tables with active filters with isolated try/catch per section
+      try { applyLogFilters(); } catch (e) { console.error("Error rendering Activity Logs:", e); }
+      try { applyDailyFilters(); } catch (e) { console.error("Error rendering Daily Shifts:", e); }
+      try { applyWeeklyFilters(); } catch (e) { console.error("Error rendering Weekly Summaries:", e); }
+      try { applyMonthlyFilters(); } catch (e) { console.error("Error rendering Monthly Summaries:", e); }
+      try { applyLeaveFilters(); } catch (e) { console.error("Error rendering Leave Requests:", e); }
+      try { applyDeviceFilters(); } catch (e) { console.error("Error rendering Device Checkouts:", e); }
+      try { applyStaffFilters(); } catch (e) { console.error("Error rendering Employee Directory:", e); }
 
       if (showToastFeedback) {
         showToast("Admin telemetry synchronized with cloud database.", "success", "Refreshed");
       }
     } else {
-      showToast(res.message || "Failed to load dashboard data.", "danger", "Sync Failed");
-      showAlert("adminAlert", res.message || "Failed to load dashboard data.", "danger");
+      const serverStatus = res ? (res.status || "Unknown") : "No response";
+      const errMsg = (res && res.message)
+        ? res.message
+        : (serverStatus === "Operational"
+            ? "Server operational handshake received instead of dataset. Please refresh or check connection."
+            : `Failed to load dashboard data (Server status: ${serverStatus}).`);
+
+      showToast(errMsg, "danger", "Sync Failed");
+      showAlert("adminAlert", errMsg, "danger");
     }
   } catch (err) {
     showLoader(false);
