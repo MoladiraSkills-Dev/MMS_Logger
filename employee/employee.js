@@ -1,11 +1,12 @@
 /**
  * ============================================================================
  * MOLĀDIRA SKILLS (MMS) - EMPLOYEE PORTAL CONTROLLER (employee/employee.js)
- * Attendance Telemetry, Geolocation Tracking, and Resource History
+ * Attendance Telemetry, Geolocation Tracking, Shift Progress & History (v2.0)
  * ============================================================================
  */
 
 let CURRENT_SESSION = null;
+let SHIFT_PROGRESS_INTERVAL = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   CURRENT_SESSION = requireSession(null, "../index.html");
@@ -16,11 +17,23 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("userDisplayName").innerText = `${user.firstName} ${user.lastName}`;
   document.getElementById("userRoleBadge").innerText = CURRENT_SESSION.accountType || "Employee";
 
+  // Initials Avatar
+  const avatarEl = document.getElementById("userAvatar");
+  if (avatarEl) {
+    const initials = (user.firstName.charAt(0) + (user.lastName ? user.lastName.charAt(0) : "")).toUpperCase();
+    avatarEl.innerText = initials || "M";
+  }
+
   // Start live clock
   updateLiveClock("liveClockDisplay", "liveDateDisplay");
 
   // Load Employee Data
   loadEmployeeData();
+
+  // Shift timeline ticker
+  updateShiftProgressTimeline();
+  if (SHIFT_PROGRESS_INTERVAL) clearInterval(SHIFT_PROGRESS_INTERVAL);
+  SHIFT_PROGRESS_INTERVAL = setInterval(updateShiftProgressTimeline, 60000);
 });
 
 function switchEmpTab(tabName) {
@@ -54,11 +67,99 @@ async function loadEmployeeData() {
       renderRecentLogs(res.recentLogs || []);
       renderMyLeaves(res.leaveRequests || []);
       renderMyDevices(res.deviceRequests || []);
+      updateTactileButtonStates(res.todayShift);
+      updateShiftProgressTimeline(res.todayShift);
     } else {
       console.warn("Could not retrieve employee portal data:", res.message);
     }
   } catch (err) {
     console.error("Failed to load employee portal data:", err);
+  }
+}
+
+function updateTactileButtonStates(shift) {
+  const btnIn = document.getElementById("btnClockIn");
+  const badgeIn = document.getElementById("clockInStatusBadge");
+  const subIn = document.getElementById("clockInSubtext");
+
+  const btnOut = document.getElementById("btnClockOut");
+  const badgeOut = document.getElementById("clockOutStatusBadge");
+  const subOut = document.getElementById("clockOutSubtext");
+
+  if (!btnIn || !btnOut) return;
+
+  if (shift && shift.status === "Completed") {
+    // Both completed
+    btnIn.disabled = true;
+    btnIn.style.opacity = "0.65";
+    if (badgeIn) {
+      badgeIn.classList.remove("hidden");
+      badgeIn.innerText = `✓ Shift Completed (${shift.clockIn})`;
+    }
+
+    btnOut.disabled = true;
+    btnOut.style.opacity = "0.65";
+    if (badgeOut) {
+      badgeOut.classList.remove("hidden");
+      badgeOut.innerText = `✓ Shift Completed (${shift.clockOut})`;
+    }
+  } else if (shift && shift.status === "In Progress") {
+    // Clock In done, Clock Out active
+    btnIn.disabled = true;
+    btnIn.style.opacity = "0.75";
+    if (badgeIn) {
+      badgeIn.classList.remove("hidden");
+      badgeIn.innerText = `✓ Clocked In at ${shift.clockIn}`;
+    }
+    if (subIn) subIn.innerText = `Shift active since ${shift.floorIn || shift.clockIn}`;
+
+    btnOut.disabled = false;
+    btnOut.style.opacity = "1";
+    if (badgeOut) badgeOut.classList.add("hidden");
+    if (subOut) subOut.innerText = "Conclude daily shift & GPS";
+  } else {
+    // Shift not started
+    btnIn.disabled = false;
+    btnIn.style.opacity = "1";
+    if (badgeIn) badgeIn.classList.add("hidden");
+    if (subIn) subIn.innerText = "Record shift start & GPS";
+
+    btnOut.disabled = false;
+    btnOut.style.opacity = "1";
+    if (badgeOut) badgeOut.classList.add("hidden");
+    if (subOut) subOut.innerText = "Conclude daily shift & GPS";
+  }
+}
+
+function updateShiftProgressTimeline(shift) {
+  const fill = document.getElementById("shiftProgressFill");
+  const pct = document.getElementById("shiftProgressPct");
+  const label = document.getElementById("shiftProgressLabel");
+
+  if (!fill || !pct || !label) return;
+
+  const now = new Date();
+  const currentHour = now.getHours() + (now.getMinutes() / 60);
+
+  // Standard shift: 08:00 to 17:00 (9 hours span)
+  const shiftStart = 8.0;
+  const shiftEnd = 17.0;
+  const totalShiftSpan = shiftEnd - shiftStart;
+
+  if (currentHour < shiftStart) {
+    fill.style.width = "0%";
+    pct.innerText = "0%";
+    label.innerText = "Shift starts at 08:00 AM";
+  } else if (currentHour >= shiftEnd) {
+    fill.style.width = "100%";
+    pct.innerText = "100%";
+    label.innerText = "Standard Workday Concluded (17:00)";
+  } else {
+    const elapsed = currentHour - shiftStart;
+    const percentage = Math.min(100, Math.max(0, Math.round((elapsed / totalShiftSpan) * 100)));
+    fill.style.width = `${percentage}%`;
+    pct.innerText = `${percentage}%`;
+    label.innerText = `Workday In Progress (${percentage}% completed)`;
   }
 }
 
@@ -82,7 +183,7 @@ function renderTodayShift(shift) {
   dispIn.innerText = shift.clockIn || "--:--";
   dispFloorIn.innerText = shift.floorIn || "--:--";
   dispOut.innerText = shift.clockOut || "--:--";
-  dispNet.innerText = shift.totalHours || "--";
+  dispNet.innerText = shift.totalHours ? `${shift.totalHours} hrs` : "--";
 
   if (shift.status === "Completed") {
     badge.className = "badge badge-success";
@@ -113,14 +214,14 @@ function renderRecentLogs(logs) {
     return `
       <tr>
         <td>
-          <div class="font-bold">${log.date}</div>
-          <div class="text-xs text-dim font-mono">${log.time}</div>
+          <div class="font-bold">${escapeHtml(log.date)}</div>
+          <div class="text-xs text-dim font-mono">${escapeHtml(log.time)}</div>
         </td>
         <td>
-          <span class="badge ${badgeClass}">${icon} ${log.action}</span>
+          <span class="badge ${badgeClass}">${icon} ${escapeHtml(log.action)}</span>
         </td>
         <td>
-          <div class="text-sm">${escapeHtml(log.location || "Location not resolved")}</div>
+          <div class="text-sm">${escapeHtml(log.location || "Physical location resolved")}</div>
           ${log.editedBy ? `<span class="badge badge-warning text-xs mt-1">Edited by ${escapeHtml(log.editedBy)}</span>` : ""}
         </td>
       </tr>
@@ -145,10 +246,10 @@ function renderMyLeaves(leaves) {
     return `
       <tr>
         <td><strong>${escapeHtml(item.type)}</strong></td>
-        <td>${item.startDate}</td>
-        <td>${item.endDate}</td>
+        <td>${escapeHtml(item.startDate)}</td>
+        <td>${escapeHtml(item.endDate)}</td>
         <td><span class="badge ${statusBadge}">${escapeHtml(item.status)}</span></td>
-        <td class="text-xs text-dim">${item.submittedDate || "--"}</td>
+        <td class="text-xs text-dim">${escapeHtml(item.submittedDate || "--")}</td>
       </tr>
     `;
   }).join("");
@@ -171,10 +272,10 @@ function renderMyDevices(devices) {
     return `
       <tr>
         <td><strong>${escapeHtml(item.deviceDetails)}</strong></td>
-        <td>${item.startDate} &rarr; ${item.endDate}</td>
+        <td>${escapeHtml(item.startDate)} &rarr; ${escapeHtml(item.endDate)}</td>
         <td class="text-sm">${escapeHtml(item.reason)}</td>
         <td><span class="badge ${statusBadge}">${escapeHtml(item.status)}</span></td>
-        <td class="text-xs text-dim">${item.submittedDate || "--"}</td>
+        <td class="text-xs text-dim">${escapeHtml(item.submittedDate || "--")}</td>
       </tr>
     `;
   }).join("");
@@ -184,11 +285,20 @@ async function handleClockAction(action) {
   hideAlert("employeeAlert");
   const user = CURRENT_SESSION.user;
 
-  // Visual confirmation
-  const confirmMsg = action === "Clock In" 
-    ? "Confirm Clock In for today? Ensure you are at your designated MolāDira site."
-    : "Confirm Clock Out? This will finalize your shift hours for today.";
-  if (!confirm(confirmMsg)) return;
+  // Custom Seamless Confirmation Modal (replaces browser confirm)
+  const isClockIn = action === "Clock In";
+  const confirmed = await showConfirmModal({
+    title: `Confirm ${action}`,
+    message: isClockIn
+      ? "Confirm shift start? Your precise GPS coordinates will be captured and verified against designated MolāDira site parameters."
+      : "Confirm shift conclusion? This will finalize your shift hours and lock your daily attendance record.",
+    confirmText: isClockIn ? "Clock In Now" : "Clock Out Now",
+    cancelText: "Cancel",
+    confirmType: isClockIn ? "success" : "danger",
+    icon: isClockIn ? "📍" : "🏁"
+  });
+
+  if (!confirmed) return;
 
   showLoader(true, `Acquiring GPS coordinates for ${action}...`);
 
@@ -213,19 +323,22 @@ async function handleClockAction(action) {
     if (res.status === "success") {
       const banner = document.getElementById("locationStatusText");
       if (banner && res.location) {
-        banner.innerHTML = `<strong>Resolved:</strong> ${escapeHtml(res.location)} (${res.time})`;
+        banner.innerHTML = `<strong>GPS Locked:</strong> ${escapeHtml(res.location)} (${res.time})`;
       }
 
+      showToast(`Successfully recorded ${action} at ${res.time}!`, "success", `${action} Recorded`);
       showAlert("employeeAlert", `Successfully recorded ${action} at ${res.time}! Physical location: ${res.location}`, "success");
       
       // Refresh dashboard
       loadEmployeeData();
     } else {
+      showToast(res.message || `Unable to record ${action}.`, "danger", "Action Blocked");
       showAlert("employeeAlert", res.message || `Unable to record ${action}.`, "danger");
     }
 
   } catch (err) {
     showLoader(false);
+    showToast(err.message || "Failed to process attendance action.", "danger", "GPS / Network Error");
     showAlert("employeeAlert", err.message || "Failed to process attendance action.", "danger");
   }
 }

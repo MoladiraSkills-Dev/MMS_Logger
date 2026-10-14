@@ -12,7 +12,7 @@
 
   <div class="employee-container">
     
-    <!-- Header Bar -->
+    <!-- Header Bar with User Profile and Quick Sign Out -->
     <header class="portal-header">
       <div class="portal-brand">
         <div class="brand-mini-badge pulse-glow">MMS</div>
@@ -23,12 +23,13 @@
       </div>
 
       <div class="user-profile-badge">
+        <div class="avatar-badge" id="userAvatar">M</div>
         <div class="text-right">
           <p class="text-sm font-bold text-main" id="userDisplayName">Loading Employee...</p>
           <span class="badge badge-gradient" id="userRoleBadge">Employee</span>
         </div>
         <button type="button" class="btn btn-secondary btn-sm" id="btnEmployeeLogout" onclick="logout()" title="Sign out of portal">
-          Sign Out
+          <span>🚪</span> Sign Out
         </button>
       </div>
     </header>
@@ -36,10 +37,26 @@
     <!-- Global Feedback Alert Container -->
     <div id="employeeAlert" class="alert hidden" role="alert"></div>
 
-    <!-- Live Digital Clock & Calendar -->
+    <!-- Live Digital Clock, Calendar & Shift Timeline -->
     <section class="clock-widget-card" aria-label="Current Workspace Time">
       <div class="live-time-display font-mono" id="liveClockDisplay">--:--:--</div>
       <div class="live-date-display" id="liveDateDisplay">Loading Date...</div>
+
+      <!-- Shift Progress Bar Widget -->
+      <div class="shift-progress-box" id="shiftProgressBox">
+        <div class="shift-progress-header">
+          <span id="shiftProgressLabel">Daily Shift Progress (08:00 - 17:00)</span>
+          <span id="shiftProgressPct" class="font-mono text-gradient">0%</span>
+        </div>
+        <div class="shift-progress-track">
+          <div class="shift-progress-fill" id="shiftProgressFill"></div>
+        </div>
+        <div class="shift-progress-markers">
+          <span>08:00 Start</span>
+          <span>12:30 (Lunch Break)</span>
+          <span>17:00 Standard End</span>
+        </div>
+      </div>
     </section>
 
     <!-- Tactile Clock In / Clock Out Action Buttons -->
@@ -48,12 +65,14 @@
         <span class="btn-tactile-icon">📍</span>
         <span>Clock In</span>
         <span class="btn-tactile-subtitle" id="clockInSubtext">Record shift start & GPS</span>
+        <span class="btn-tactile-status hidden" id="clockInStatusBadge">✓ Logged Today</span>
       </button>
 
       <button type="button" class="btn-tactile btn-tactile-out" id="btnClockOut" onclick="handleClockAction('Clock Out')">
         <span class="btn-tactile-icon">🏁</span>
         <span>Clock Out</span>
         <span class="btn-tactile-subtitle" id="clockOutSubtext">Conclude daily shift & GPS</span>
+        <span class="btn-tactile-status hidden" id="clockOutStatusBadge">✓ Completed</span>
       </button>
     </section>
 
@@ -71,7 +90,7 @@
         <div class="btn-feature-icon">💻</div>
         <div>
           <div class="btn-feature-title">Checkout Device</div>
-          <div class="btn-feature-sub">Request Laptop, Scanner or Equipment</div>
+          <div class="btn-feature-sub">Request Laptop, Scanner or Field Kit</div>
         </div>
       </button>
     </section>
@@ -91,7 +110,7 @@
           <div class="shift-stat-value" id="dispActualIn">--:--</div>
         </div>
         <div class="shift-stat-box">
-          <div class="shift-stat-label">Floor In (08:00)</div>
+          <div class="shift-stat-label">Audited Floor In</div>
           <div class="shift-stat-value" id="dispFloorIn">--:--</div>
         </div>
         <div class="shift-stat-box">
@@ -104,9 +123,12 @@
         </div>
       </div>
 
-      <!-- Real-time Location Indicator -->
+      <!-- Real-time Location Indicator with Radar Pulse -->
       <div class="location-status-banner" id="locationStatusBanner">
-        <div class="location-indicator-dot"></div>
+        <div class="location-indicator-container">
+          <div class="location-indicator-pulse"></div>
+          <div class="location-indicator-dot"></div>
+        </div>
         <span id="locationStatusText">Ready to acquire GPS coordinates via device sensor.</span>
       </div>
     </section>
@@ -115,7 +137,7 @@
     <section class="card" aria-label="Employee Activity and Requests">
       <nav class="nav-tabs" aria-label="Employee Tabs">
         <button type="button" id="tabBtnLogs" class="nav-tab-btn active" onclick="switchEmpTab('logs')">
-          <span>📋</span> Recent Logs
+          <span>📋</span> Recent Telemetry
         </button>
         <button type="button" id="tabBtnLeaves" class="nav-tab-btn" onclick="switchEmpTab('leaves')">
           <span>🌴</span> My Leaves

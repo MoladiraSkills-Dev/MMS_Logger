@@ -1,11 +1,11 @@
 /**
  * ============================================================================
  * MOLĀDIRA SKILLS (MMS) - SHARED API CLIENT & UTILITIES (shared/js/api.js)
- * Decoupled Google Apps Script Web App Client
+ * Decoupled Google Apps Script Web App Client (v2.0 Seamless Overhaul)
  * ============================================================================
  */
 
-// Replace this with your Google Apps Script Web App exec URL after deployment
+// Central Google Apps Script Web App exec URL
 const APPS_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzZoMqcaFaap1EnJYxh2uhSb-qCuRe39E0CDijI6Yv1TYOxm0JajRZv-6UDidTP_B1R/exec";
 
 const SESSION_STORAGE_KEY = "mms_logger_session";
@@ -192,7 +192,7 @@ function logout(redirectUrl = "../index.html") {
 }
 
 /* ==========================================================================
-   GLOBAL UI LOADERS & ALERTS
+   GLOBAL UI LOADERS, INLINE BUTTON SPINNERS & ALERTS
    ========================================================================== */
 
 function showLoader(show, message = "Processing MMS telemetry...") {
@@ -215,6 +215,25 @@ function showLoader(show, message = "Processing MMS telemetry...") {
     spinner.classList.remove("hidden");
   } else {
     spinner.classList.add("hidden");
+  }
+}
+
+/**
+ * Seamless button loading state controller
+ */
+function setButtonLoading(button, isLoading, loadingText = "Processing...") {
+  if (!button) return;
+  if (isLoading) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+    }
+    button.disabled = true;
+    button.innerHTML = `<span class="btn-spinner"></span> <span>${loadingText}</span>`;
+  } else {
+    button.disabled = false;
+    if (button.dataset.originalHtml) {
+      button.innerHTML = button.dataset.originalHtml;
+    }
   }
 }
 
@@ -242,6 +261,141 @@ function hideAlert(containerId) {
 }
 
 /* ==========================================================================
+   MODERN FLOATING TOAST SYSTEM (Non-blocking, elegant notifications)
+   ========================================================================== */
+
+function getOrCreateToastContainer() {
+  let container = document.getElementById("mmsToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "mmsToastContainer";
+    container.className = "toast-container";
+    container.setAttribute("aria-live", "polite");
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function showToast(message, type = "info", title = "", duration = 4200) {
+  const container = getOrCreateToastContainer();
+  const toast = document.createElement("div");
+  toast.className = `toast-item toast-${type}`;
+
+  let defaultTitle = "MMS Notification";
+  let icon = "ℹ️";
+  if (type === "success") {
+    defaultTitle = "Success";
+    icon = "✓";
+  } else if (type === "danger") {
+    defaultTitle = "Action Required";
+    icon = "⚠️";
+  } else if (type === "warning") {
+    defaultTitle = "Notice";
+    icon = "⚡";
+  }
+
+  const finalTitle = title || defaultTitle;
+
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <div class="toast-body">
+      <div class="toast-title">${escapeHtmlShared(finalTitle)}</div>
+      <div class="toast-message">${escapeHtmlShared(message)}</div>
+    </div>
+    <button type="button" class="toast-close" aria-label="Dismiss">&times;</button>
+    <div class="toast-progress" style="animation-duration: ${duration}ms;"></div>
+  `;
+
+  const closeBtn = toast.querySelector(".toast-close");
+  const dismiss = () => {
+    toast.classList.add("toast-leaving");
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 280);
+  };
+
+  closeBtn.addEventListener("click", dismiss);
+  container.appendChild(toast);
+
+  const timeoutId = setTimeout(dismiss, duration);
+  toast.addEventListener("mouseenter", () => clearTimeout(timeoutId));
+}
+
+/* ==========================================================================
+   SEAMLESS CUSTOM CONFIRM MODAL (Replaces intrusive window.confirm)
+   ========================================================================== */
+
+function showConfirmModal({
+  title = "Confirm Action",
+  message = "Are you sure you wish to proceed?",
+  confirmText = "Proceed",
+  cancelText = "Cancel",
+  confirmType = "primary", // primary, danger, success
+  icon = "❓"
+} = {}) {
+  return new Promise((resolve) => {
+    // Remove existing if any
+    const existing = document.getElementById("mmsConfirmModal");
+    if (existing) existing.remove();
+
+    const backdrop = document.createElement("div");
+    backdrop.id = "mmsConfirmModal";
+    backdrop.className = "modal-backdrop";
+    backdrop.setAttribute("role", "dialog");
+    backdrop.setAttribute("aria-modal", "true");
+
+    let confirmBtnClass = "btn-primary";
+    let iconBg = "background: var(--grad-mms-subtle); color: var(--mms-pink); border: 1px solid var(--border-glow);";
+
+    if (confirmType === "danger") {
+      confirmBtnClass = "btn-danger";
+      iconBg = "background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger-border);";
+    } else if (confirmType === "success") {
+      confirmBtnClass = "btn-success";
+      iconBg = "background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success-border);";
+    }
+
+    backdrop.innerHTML = `
+      <div class="modal-dialog confirm-dialog">
+        <div class="modal-body" style="padding: 2rem 1.75rem;">
+          <div class="confirm-icon-badge" style="${iconBg}">
+            ${icon}
+          </div>
+          <h3 class="modal-title justify-center text-center mb-2" style="font-size: 1.35rem;">
+            ${escapeHtmlShared(title)}
+          </h3>
+          <p class="text-sm text-center mb-6" style="color: var(--text-muted); line-height: 1.55;">
+            ${escapeHtmlShared(message)}
+          </p>
+          <div class="flex items-center justify-center gap-3">
+            <button type="button" class="btn btn-secondary flex-1" id="btnConfirmCancel">
+              ${escapeHtmlShared(cancelText)}
+            </button>
+            <button type="button" class="btn ${confirmBtnClass} flex-1" id="btnConfirmOk">
+              ${escapeHtmlShared(confirmText)}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+
+    const cleanup = (result) => {
+      backdrop.classList.add("hidden");
+      setTimeout(() => backdrop.remove(), 200);
+      resolve(result);
+    };
+
+    document.getElementById("btnConfirmOk").addEventListener("click", () => cleanup(true));
+    document.getElementById("btnConfirmCancel").addEventListener("click", () => cleanup(false));
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) cleanup(false);
+    });
+  });
+}
+
+/* ==========================================================================
    GEOLOCATION CAPTURE HELPER
    ========================================================================== */
 
@@ -257,27 +411,27 @@ function getBrowserCoordinates() {
         resolve({
           lat: position.coords.latitude.toFixed(6),
           lon: position.coords.longitude.toFixed(6),
-          accuracy: position.coords.accuracy
+          accuracy: position.coords.accuracy ? Math.round(position.coords.accuracy) : null
         });
       },
       (error) => {
-        let msg = "Could not obtain GPS location.";
+        let msg = "Could not acquire GPS coordinates.";
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            msg = "GPS Permission Denied. Please allow location access in your browser settings to Clock In/Out.";
+            msg = "Location permission denied. Please allow location access in your browser / device settings to log shift attendance.";
             break;
           case error.POSITION_UNAVAILABLE:
-            msg = "Location information is currently unavailable on this device.";
+            msg = "GPS signal is currently unavailable on this device. Please check device location settings.";
             break;
           case error.TIMEOUT:
-            msg = "GPS location request timed out. Please retry with a clear signal.";
+            msg = "GPS location request timed out. Please verify device sensor has an unobstructed signal and retry.";
             break;
         }
         reject(new Error(msg));
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
+        timeout: 16000,
         maximumAge: 0
       }
     );
@@ -298,6 +452,7 @@ function updateLiveClock(timeElementId, dateElementId) {
       timeEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     }
     if (dateEl) {
+      timeEl.setAttribute("datetime", now.toISOString());
       dateEl.innerText = now.toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     }
   }
@@ -305,3 +460,22 @@ function updateLiveClock(timeElementId, dateElementId) {
   tick();
   return setInterval(tick, 1000);
 }
+
+function escapeHtmlShared(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/* Online / Offline status monitoring */
+window.addEventListener("online", () => {
+  showToast("Your internet connection has been restored.", "success", "Back Online");
+});
+
+window.addEventListener("offline", () => {
+  showToast("You are currently offline. Cloud sync will pause until connection returns.", "warning", "Connection Lost");
+});

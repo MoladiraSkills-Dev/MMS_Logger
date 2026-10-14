@@ -1,7 +1,8 @@
 /**
  * ============================================================================
  * MOLĀDIRA SKILLS (MMS) - ADMIN DASHBOARD CONTROLLER (admin/admin.js)
- * Full Administrative Telemetry, Shift Auditing, Approvals & Exports
+ * Full Administrative Telemetry, Shift Auditing, Approvals & Exports (v2.0)
+ * Upgraded with Non-blocking Confirmation Modals, Toast Feedback & Presets
  * ============================================================================
  */
 
@@ -22,7 +23,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize UI with Admin info
   const user = CURRENT_ADMIN.user;
-  document.getElementById("adminSubtitle").innerText = `Logged in as Admin: ${user.firstName} ${user.lastName} (${user.email})`;
+  document.getElementById("adminSubtitle").innerText = `Operations Lead: ${user.firstName} ${user.lastName} (${user.email})`;
+
+  // Admin Avatar Initials
+  const avatarEl = document.getElementById("adminAvatar");
+  if (avatarEl) {
+    const initials = (user.firstName.charAt(0) + (user.lastName ? user.lastName.charAt(0) : "")).toUpperCase();
+    avatarEl.innerText = initials || "A";
+  }
 
   // Initialize Date Filter Inputs
   const todayStr = new Date().toISOString().split("T")[0];
@@ -31,31 +39,83 @@ document.addEventListener("DOMContentLoaded", () => {
   const filterLogDate = document.getElementById("filterLogDate");
   const filterDailyDate = document.getElementById("filterDailyDate");
   const filterMonthlyMonth = document.getElementById("filterMonthlyMonth");
-  const exportStartDate = document.getElementById("exportStartDate");
-  const exportEndDate = document.getElementById("exportEndDate");
 
   if (filterLogDate) filterLogDate.value = todayStr;
   if (filterDailyDate) filterDailyDate.value = todayStr;
   if (filterMonthlyMonth) filterMonthlyMonth.value = currentMonthStr;
 
-  // Set default export range to current month (1st to today)
-  if (exportStartDate) exportStartDate.value = `${currentMonthStr}-01`;
-  if (exportEndDate) exportEndDate.value = todayStr;
+  // Set default export range to 'thisMonth'
+  setDatePreset("thisMonth");
 
   // Fetch complete admin state
   loadAdminDashboard();
 });
 
 /* ==========================================================================
+   DATE RANGE PRESET CONTROLLER (Quick Timesheet Presets)
+   ========================================================================== */
+
+function setDatePreset(presetKey) {
+  const startInput = document.getElementById("exportStartDate");
+  const endInput = document.getElementById("exportEndDate");
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+
+  let startStr = todayStr;
+  let endStr = todayStr;
+
+  if (presetKey === "today") {
+    startStr = todayStr;
+    endStr = todayStr;
+  } else if (presetKey === "thisWeek") {
+    // Current Monday
+    const day = now.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    startStr = monday.toISOString().split("T")[0];
+    endStr = todayStr;
+  } else if (presetKey === "thisMonth") {
+    // 1st of current month to today
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    startStr = firstDay.toISOString().split("T")[0];
+    endStr = todayStr;
+  } else if (presetKey === "lastMonth") {
+    // 1st of last month to last day of last month
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    startStr = firstDayLastMonth.toISOString().split("T")[0];
+    endStr = lastDayLastMonth.toISOString().split("T")[0];
+  }
+
+  if (startInput) startInput.value = startStr;
+  if (endInput) endInput.value = endStr;
+
+  // Update active pill button state
+  const presetButtons = document.querySelectorAll(".range-preset-btn");
+  presetButtons.forEach(btn => {
+    if (btn.getAttribute("onclick") && btn.getAttribute("onclick").includes(presetKey)) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+/* ==========================================================================
    DASHBOARD DATA LOADER
    ========================================================================== */
 
-async function loadAdminDashboard(showToast = false) {
+async function loadAdminDashboard(showToastFeedback = false) {
+  const refreshIcon = document.getElementById("refreshIcon");
+  if (refreshIcon) refreshIcon.classList.add("spin-icon");
+
   showLoader(true, "Synchronizing MMS Administration Hub...");
 
   try {
     const res = await callApi("getAdminDashboardData");
     showLoader(false);
+    if (refreshIcon) refreshIcon.classList.remove("spin-icon");
 
     if (res.status === "success") {
       CACHED_LOGS = res.logs || [];
@@ -66,7 +126,7 @@ async function loadAdminDashboard(showToast = false) {
       CACHED_DEVICES = res.deviceRequests || [];
       CACHED_STAFF = res.employees || [];
 
-      // Update KPI Stat Counters
+      // Update KPI Stat Counters & Tab Badges
       updateKpis(res);
 
       // Populate Export Staff Dropdown
@@ -81,15 +141,17 @@ async function loadAdminDashboard(showToast = false) {
       applyDeviceFilters();
       applyStaffFilters();
 
-      if (showToast) {
-        showAlert("adminAlert", "Admin dashboard data refreshed successfully.", "success");
-        setTimeout(() => hideAlert("adminAlert"), 3500);
+      if (showToastFeedback) {
+        showToast("Admin telemetry synchronized with cloud database.", "success", "Refreshed");
       }
     } else {
+      showToast(res.message || "Failed to load dashboard data.", "danger", "Sync Failed");
       showAlert("adminAlert", res.message || "Failed to load dashboard data.", "danger");
     }
   } catch (err) {
     showLoader(false);
+    if (refreshIcon) refreshIcon.classList.remove("spin-icon");
+    showToast("Database Connection Error: " + err.message, "danger", "Connection Error");
     showAlert("adminAlert", "Database Connection Error: " + err.message, "danger");
   }
 }
@@ -102,7 +164,8 @@ function updateKpis(data) {
   // Count on-leave employees
   const onLeaveCount = data.employees ? data.employees.filter(e => e.workStatus === "On Leave").length : 0;
   
-  // Count pending devices
+  // Count pending devices & leaves for tab notification badges
+  const pendingLeaves = data.leaveRequests ? data.leaveRequests.filter(l => l.status === "Pending").length : 0;
   const pendingDevices = data.deviceRequests ? data.deviceRequests.filter(d => d.status === "Pending").length : 0;
 
   document.getElementById("kpiTotalStaff").innerText = staffCount;
@@ -110,6 +173,27 @@ function updateKpis(data) {
   document.getElementById("kpiClockedOut").innerText = logoutsToday;
   document.getElementById("kpiOnLeave").innerText = onLeaveCount;
   document.getElementById("kpiPendingDevices").innerText = pendingDevices;
+
+  // Dynamic Badges on Navigation Tabs
+  const badgeLeave = document.getElementById("tabBadgeLeave");
+  if (badgeLeave) {
+    if (pendingLeaves > 0) {
+      badgeLeave.innerText = pendingLeaves;
+      badgeLeave.classList.remove("hidden");
+    } else {
+      badgeLeave.classList.add("hidden");
+    }
+  }
+
+  const badgeDevice = document.getElementById("tabBadgeDevice");
+  if (badgeDevice) {
+    if (pendingDevices > 0) {
+      badgeDevice.innerText = pendingDevices;
+      badgeDevice.classList.remove("hidden");
+    } else {
+      badgeDevice.classList.add("hidden");
+    }
+  }
 }
 
 function populateExportStaffDropdown(staffList) {
@@ -188,7 +272,7 @@ function renderLogsTable(logs) {
   if (!tbody) return;
 
   if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No activity telemetry found matching filter criteria.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No activity logs found for the selected filters.</td></tr>`;
     return;
   }
 
@@ -458,7 +542,16 @@ function renderLeaveTable(leaves) {
 }
 
 async function handleApproveLeave(reqId) {
-  if (!confirm(`Approve leave request #${reqId}? This will mark employee on-leave during the shift dates.`)) return;
+  const confirmed = await showConfirmModal({
+    title: "Approve Leave Application",
+    message: `Confirm approval for Leave Request #${reqId}? The employee's shift standing will reflect active approved leave.`,
+    confirmText: "Approve Leave",
+    cancelText: "Cancel",
+    confirmType: "success",
+    icon: "🌴"
+  });
+
+  if (!confirmed) return;
   showLoader(true, "Authorizing Leave Application...");
 
   try {
@@ -470,19 +563,28 @@ async function handleApproveLeave(reqId) {
     showLoader(false);
 
     if (res.status === "success") {
-      alert("Success: " + res.message);
+      showToast(res.message || "Leave application approved successfully.", "success", "Leave Approved");
       loadAdminDashboard();
     } else {
-      alert("Error: " + res.message);
+      showToast(res.message || "Approval failed.", "danger", "Action Error");
     }
   } catch (err) {
     showLoader(false);
-    alert("Connection Error: " + err.message);
+    showToast("Connection Error: " + err.message, "danger", "Network Error");
   }
 }
 
 async function handleRejectLeave(reqId) {
-  if (!confirm(`Reject leave request #${reqId}?`)) return;
+  const confirmed = await showConfirmModal({
+    title: "Decline Leave Application",
+    message: `Are you sure you want to decline Leave Request #${reqId}?`,
+    confirmText: "Decline Application",
+    cancelText: "Cancel",
+    confirmType: "danger",
+    icon: "⚠️"
+  });
+
+  if (!confirmed) return;
   showLoader(true, "Rejecting Leave Application...");
 
   try {
@@ -494,14 +596,14 @@ async function handleRejectLeave(reqId) {
     showLoader(false);
 
     if (res.status === "success") {
-      alert("Leave marked as Rejected.");
+      showToast("Leave request marked as Declined.", "info", "Leave Declined");
       loadAdminDashboard();
     } else {
-      alert("Error: " + res.message);
+      showToast(res.message || "Decline action failed.", "danger", "Action Error");
     }
   } catch (err) {
     showLoader(false);
-    alert("Connection Error: " + err.message);
+    showToast("Connection Error: " + err.message, "danger", "Network Error");
   }
 }
 
@@ -566,7 +668,16 @@ function renderDeviceTable(devices) {
 }
 
 async function handleApproveDevice(reqId) {
-  if (!confirm(`Authorize checkout for device request #${reqId}?`)) return;
+  const confirmed = await showConfirmModal({
+    title: "Authorize Equipment Checkout",
+    message: `Authorize checkout for Equipment Asset Request #${reqId}?`,
+    confirmText: "Authorize Checkout",
+    cancelText: "Cancel",
+    confirmType: "success",
+    icon: "💻"
+  });
+
+  if (!confirmed) return;
   showLoader(true, "Authorizing Equipment Checkout...");
 
   try {
@@ -578,19 +689,28 @@ async function handleApproveDevice(reqId) {
     showLoader(false);
 
     if (res.status === "success") {
-      alert("Success: " + res.message);
+      showToast(res.message || "Device checkout authorized.", "success", "Equipment Authorized");
       loadAdminDashboard();
     } else {
-      alert("Error: " + res.message);
+      showToast(res.message || "Failed to authorize device checkout.", "danger", "Action Error");
     }
   } catch (err) {
     showLoader(false);
-    alert("Connection Error: " + err.message);
+    showToast("Connection Error: " + err.message, "danger", "Network Error");
   }
 }
 
 async function handleRejectDevice(reqId) {
-  if (!confirm(`Decline device checkout request #${reqId}?`)) return;
+  const confirmed = await showConfirmModal({
+    title: "Decline Equipment Checkout",
+    message: `Decline Equipment Request #${reqId}?`,
+    confirmText: "Decline Checkout",
+    cancelText: "Cancel",
+    confirmType: "danger",
+    icon: "⚠️"
+  });
+
+  if (!confirmed) return;
   showLoader(true, "Declining Equipment Checkout...");
 
   try {
@@ -602,14 +722,14 @@ async function handleRejectDevice(reqId) {
     showLoader(false);
 
     if (res.status === "success") {
-      alert("Equipment checkout marked as Declined.");
+      showToast("Equipment checkout marked as Declined.", "info", "Request Declined");
       loadAdminDashboard();
     } else {
-      alert("Error: " + res.message);
+      showToast(res.message || "Failed to decline checkout.", "danger", "Action Error");
     }
   } catch (err) {
     showLoader(false);
-    alert("Connection Error: " + err.message);
+    showToast("Connection Error: " + err.message, "danger", "Network Error");
   }
 }
 
@@ -652,11 +772,17 @@ function renderStaffTable(staff) {
     const standingBadge = isBlocked ? "badge-danger" : "badge-success";
     const roleBadge = u.accountType === "Admin" ? "badge-gradient" : "badge-info";
     const workBadge = u.workStatus === "On Leave" ? "badge-warning" : "badge-success";
+    const initials = (u.firstName.charAt(0) + (u.lastName ? u.lastName.charAt(0) : "")).toUpperCase() || "E";
 
     return `
       <tr>
         <td>
-          <div class="font-bold">${escapeHtml(u.firstName)} ${escapeHtml(u.lastName)}</div>
+          <div class="user-table-cell">
+            <div class="avatar-badge avatar-sm">${initials}</div>
+            <div>
+              <div class="user-table-name">${escapeHtml(u.firstName)} ${escapeHtml(u.lastName)}</div>
+            </div>
+          </div>
         </td>
         <td class="font-mono text-sm">${escapeHtml(u.email)}</td>
         <td><span class="badge ${roleBadge}">${escapeHtml(u.accountType)}</span></td>
@@ -689,8 +815,17 @@ function toggleAdminAttendancePanel() {
 
 async function handleAdminSelfClock(action) {
   const user = CURRENT_ADMIN.user;
+  const isClockIn = action === "Clock In";
 
-  if (!confirm(`Log ${action} for Admin profile (${user.firstName} ${user.lastName})?`)) return;
+  const confirmed = await showConfirmModal({
+    title: `Admin ${action}`,
+    message: `Record ${action} for Admin profile (${user.firstName} ${user.lastName}) with verified GPS?`,
+    confirmText: `Record ${action}`,
+    confirmType: isClockIn ? "success" : "danger",
+    icon: isClockIn ? "📍" : "🏁"
+  });
+
+  if (!confirmed) return;
 
   showLoader(true, `Capturing Admin GPS coordinates for ${action}...`);
 
@@ -711,14 +846,14 @@ async function handleAdminSelfClock(action) {
     showLoader(false);
 
     if (res.status === "success") {
-      alert(`Success: Admin ${action} recorded at ${res.time} (${res.location})`);
+      showToast(`Admin ${action} logged at ${res.time} (${res.location})`, "success", `${action} Recorded`);
       loadAdminDashboard(true);
     } else {
-      alert("Error: " + res.message);
+      showToast(res.message || "Failed to record admin attendance.", "danger", "Error");
     }
   } catch (err) {
     showLoader(false);
-    alert(err.message || "Failed to log admin attendance.");
+    showToast(err.message || "Failed to log admin attendance.", "danger", "GPS Error");
   }
 }
 
@@ -734,7 +869,7 @@ function openEditShiftModal(summaryId) {
   document.getElementById("editShiftEmail").value = shift.email;
   document.getElementById("editShiftDate").value = shift.date;
 
-  document.getElementById("editShiftInfo").innerText = `${shift.firstName} ${shift.lastName} &bull; ${shift.date}`;
+  document.getElementById("editShiftInfo").innerHTML = `<strong>${escapeHtml(shift.firstName)} ${escapeHtml(shift.lastName)}</strong> &bull; ${escapeHtml(shift.date)}`;
   document.getElementById("editClockIn").value = shift.clockIn !== "--" ? shift.clockIn : "08:00:00";
   document.getElementById("editClockOut").value = shift.clockOut !== "--" ? shift.clockOut : "17:00:00";
 
@@ -754,7 +889,9 @@ async function handleEditShiftSubmit(event) {
   const newClockIn = document.getElementById("editClockIn").value;
   const newClockOut = document.getElementById("editClockOut").value;
   const adminEmail = CURRENT_ADMIN.user.email;
+  const saveBtn = document.getElementById("btnSaveShiftEdit");
 
+  setButtonLoading(saveBtn, true, "Committing...");
   showLoader(true, "Updating Daily Shift & recalculating Floor Times...");
 
   try {
@@ -765,25 +902,34 @@ async function handleEditShiftSubmit(event) {
       adminEmail: adminEmail
     });
 
+    setButtonLoading(saveBtn, false);
     showLoader(false);
 
     if (res.status === "success") {
       closeEditShiftModal();
-      alert("Success: " + res.message);
+      showToast(res.message || "Daily shift updated and floor times recalculated.", "success", "Shift Committed");
       loadAdminDashboard();
     } else {
       showAlert("editShiftAlert", res.message || "Failed to update shift.", "danger");
     }
   } catch (err) {
+    setButtonLoading(saveBtn, false);
     showLoader(false);
     showAlert("editShiftAlert", "Server Error: " + err.message, "danger");
   }
 }
 
 async function handleDeleteDailyShift(summaryId, dateStr, email) {
-  if (!confirm(`Permanently delete shift #${summaryId} for ${email} on ${dateStr}? This will also delete corresponding raw activity logs to prevent re-synchronization.`)) {
-    return;
-  }
+  const confirmed = await showConfirmModal({
+    title: "Delete Shift Summary",
+    message: `Permanently delete shift #${summaryId} for ${email} on ${dateStr}? This will also delete corresponding raw activity logs to prevent re-synchronization.`,
+    confirmText: "Delete Record",
+    cancelText: "Keep Record",
+    confirmType: "danger",
+    icon: "🗑️"
+  });
+
+  if (!confirmed) return;
 
   showLoader(true, "Deleting Shift and underlying telemetry logs...");
 
@@ -798,14 +944,14 @@ async function handleDeleteDailyShift(summaryId, dateStr, email) {
     showLoader(false);
 
     if (res.status === "success") {
-      alert(res.message);
+      showToast(res.message || "Shift summary record removed.", "info", "Record Deleted");
       loadAdminDashboard();
     } else {
-      alert("Error: " + res.message);
+      showToast(res.message || "Deletion failed.", "danger", "Error");
     }
   } catch (err) {
     showLoader(false);
-    alert("Connection Error: " + err.message);
+    showToast("Connection Error: " + err.message, "danger", "Network Error");
   }
 }
 
@@ -839,7 +985,9 @@ async function handleEditStaffSubmit(event) {
   const firstName = document.getElementById("editStaffFirstName").value.trim();
   const lastName = document.getElementById("editStaffLastName").value.trim();
   const status = document.getElementById("editStaffStanding").value;
+  const saveBtn = document.getElementById("btnSaveStaffEdit");
 
+  setButtonLoading(saveBtn, true, "Saving...");
   showLoader(true, "Updating Staff Directory Record...");
 
   try {
@@ -851,16 +999,18 @@ async function handleEditStaffSubmit(event) {
       newPassword: ""
     });
 
+    setButtonLoading(saveBtn, false);
     showLoader(false);
 
     if (res.status === "success") {
       closeEditStaffModal();
-      alert("Profile updated successfully!");
+      showToast("Staff profile updated successfully!", "success", "Profile Saved");
       loadAdminDashboard();
     } else {
       showAlert("editStaffAlert", res.message || "Failed to update profile.", "danger");
     }
   } catch (err) {
+    setButtonLoading(saveBtn, false);
     showLoader(false);
     showAlert("editStaffAlert", "Error: " + err.message, "danger");
   }
@@ -887,6 +1037,7 @@ async function handleResetPasswordSubmit(event) {
   const targetEmail = document.getElementById("resetPasswordEmail").value;
   const newPass = document.getElementById("newPassword").value;
   const confirmPass = document.getElementById("confirmNewPassword").value;
+  const saveBtn = document.getElementById("btnSaveResetPassword");
 
   if (newPass.length < 6) {
     showAlert("resetPasswordAlert", "Password must be at least 6 characters.", "danger");
@@ -903,6 +1054,7 @@ async function handleResetPasswordSubmit(event) {
   const lastName = staff ? staff.lastName : "";
   const status = staff ? staff.accountStanding : "Verified";
 
+  setButtonLoading(saveBtn, true, "Updating...");
   showLoader(true, "Salting and Hashing new Password...");
 
   try {
@@ -914,15 +1066,17 @@ async function handleResetPasswordSubmit(event) {
       newPassword: newPass
     });
 
+    setButtonLoading(saveBtn, false);
     showLoader(false);
 
     if (res.status === "success") {
       closeResetPasswordModal();
-      alert(`Password successfully updated for ${targetEmail}!`);
+      showToast(`Password successfully updated for ${targetEmail}!`, "success", "Password Reset");
     } else {
       showAlert("resetPasswordAlert", res.message || "Password update failed.", "danger");
     }
   } catch (err) {
+    setButtonLoading(saveBtn, false);
     showLoader(false);
     showAlert("resetPasswordAlert", "Error: " + err.message, "danger");
   }
@@ -938,21 +1092,23 @@ async function triggerTimesheetExport(format) {
   const endDate = document.getElementById("exportEndDate").value;
 
   if (!startDate || !endDate) {
-    alert("Please provide both Start Date and End Date for the timesheet export.");
+    showToast("Please provide both Start Date and End Date for the timesheet export.", "warning", "Missing Dates");
     return;
   }
 
   if (new Date(startDate) > new Date(endDate)) {
-    alert("Start Date cannot be after End Date.");
+    showToast("Start Date cannot be after End Date.", "danger", "Invalid Date Range");
     return;
   }
 
   if (staffEmail === "ALL") {
-    alert("The 'All Employees' selection is meant for Batch ZIP Archives. Please click 'Batch Download ZIP Archive' or select an individual employee.");
+    showToast("The 'All Employees' selection is meant for Batch ZIP Archives. Please click 'Batch Download ZIP Archive' or select an individual employee.", "warning", "Export Notice");
     return;
   }
 
   const formatLabel = format.toUpperCase();
+  const btn = format === 'pdf' ? document.getElementById("btnExportPdf") : document.getElementById("btnExportCsv");
+  setButtonLoading(btn, true, `Generating ${formatLabel}...`);
   showLoader(true, `Compiling MolāDira compliance timesheet in ${formatLabel} format...`);
 
   try {
@@ -963,16 +1119,19 @@ async function triggerTimesheetExport(format) {
       format: format
     });
 
+    setButtonLoading(btn, false);
     showLoader(false);
 
     if (res.status === "success" && res.base64) {
       downloadBase64File(res.base64, res.filename || `Timesheet.${format}`, res.mimeType);
+      showToast(`Exported ${formatLabel} successfully.`, "success", "File Downloaded");
     } else {
-      alert("Timesheet Generation Failed: " + (res.message || "Unknown server response"));
+      showToast("Timesheet Generation Failed: " + (res.message || "Unknown server response"), "danger", "Export Error");
     }
   } catch (err) {
+    setButtonLoading(btn, false);
     showLoader(false);
-    alert("Export Server Error: " + err.message);
+    showToast("Export Server Error: " + err.message, "danger", "Export Failed");
   }
 }
 
@@ -980,17 +1139,19 @@ async function triggerZipArchiveExport() {
   const staffEmail = document.getElementById("exportStaffSelect").value;
   const startDate = document.getElementById("exportStartDate").value;
   const endDate = document.getElementById("exportEndDate").value;
+  const btn = document.getElementById("btnExportZip");
 
   if (!startDate || !endDate) {
-    alert("Please provide both Start Date and End Date for batch export.");
+    showToast("Please provide both Start Date and End Date for batch export.", "warning", "Missing Dates");
     return;
   }
 
   if (new Date(startDate) > new Date(endDate)) {
-    alert("Start Date cannot be after End Date.");
+    showToast("Start Date cannot be after End Date.", "danger", "Invalid Date Range");
     return;
   }
 
+  setButtonLoading(btn, true, "Archiving PDFs...");
   showLoader(true, "Generating Batch PDF Timesheets and compressing to ZIP Archive on Google Drive backend (this may take up to 20 seconds)...");
 
   try {
@@ -1000,16 +1161,19 @@ async function triggerZipArchiveExport() {
       endDate: endDate
     });
 
+    setButtonLoading(btn, false);
     showLoader(false);
 
     if (res.status === "success" && res.base64) {
       downloadBase64File(res.base64, res.filename || "Moladira_Timesheets.zip", res.mimeType || "application/zip");
+      showToast("ZIP Archive generated and downloaded successfully.", "success", "Batch Export Complete");
     } else {
-      alert("ZIP Generation Failed: " + (res.message || "No timesheets could be packaged"));
+      showToast("ZIP Generation Failed: " + (res.message || "No timesheets could be packaged"), "danger", "Archive Error");
     }
   } catch (err) {
+    setButtonLoading(btn, false);
     showLoader(false);
-    alert("ZIP Archiver Error: " + err.message);
+    showToast("ZIP Archiver Error: " + err.message, "danger", "Archive Error");
   }
 }
 
