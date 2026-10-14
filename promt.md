@@ -1,5 +1,5 @@
-﻿System Role & Objective
-You are an expert full-stack developer specializing in Google Apps Script (Backend/API) and modern vanilla JavaScript + CSS (Frontend). Build a comprehensive Geolocation Attendance, Leave, and Device Management System for MolÄDira Skills (MMS).
+System Role & Objective
+You are an expert full-stack developer specializing in Google Apps Script (Backend/API) and modern vanilla JavaScript + CSS (Frontend). Build a comprehensive Geolocation Attendance, Leave, and Device Management System for MolāDira Skills (MMS).
 
 Architecture Constraint (Decoupled Deployment for Security)
 Frontend: A static multi-page web app (HTML/JS/CSS) hosted externally on GitHub Pages. It talks to the backend ONLY through asynchronous fetch() POST requests.
@@ -59,26 +59,26 @@ API Routing: Use a central handleApiRequest function. CRITICAL: Handle CORS by r
 Step 3: Frontend Requirements (GitHub Pages)
 Folder structure (Separate Admin and Employee code)
 Plaintext
-index.html              â† login / register page only
-auth/auth.js            â† login/register logic; redirects by role
+index.html              ← login / register page only
+auth/auth.js            ← login/register logic; redirects by role
 shared/
-  css/base.css          â† design tokens, layout, buttons, inputs, alerts, badges, modal, utilities
-  js/api.js             â† API client, google.script.run shim, session helpers, spinner/alert helpers
-  js/leave_device.js    â† leave & device checkout modal logic shared by both portals
+  css/base.css          ← design tokens, layout, buttons, inputs, alerts, badges, modal, utilities
+  js/api.js             ← API client, google.script.run shim, session helpers, spinner/alert helpers
+  js/leave_device.js    ← leave & device checkout modal logic shared by both portals
 employee/
-  index.html, employee.css, employee.js   â† clock in/out, leave request, device checkout
+  index.html, employee.css, employee.js   ← clock in/out, leave request, device checkout
 admin/
-  index.html, admin.css, admin.js         â† tabs, tables, filters, exports, staff + leave + device management
+  index.html, admin.css, admin.js         ← tabs, tables, filters, exports, staff + leave + device management
 Rules for this structure:
 
 Role-specific CSS/JS/HTML stays inside its own folder. Pages load ../shared/css/base.css first.
 
-auth.js saves to sessionStorage and redirects: Admin â†’ admin/index.html, everyone else â†’ employee/index.html.
+auth.js saves to sessionStorage and redirects: Admin → admin/index.html, everyone else → employee/index.html.
 
 Each portal calls requireSession(role, loginUrl) on load. Logout clears sessionStorage and returns to index.html.
 
 UI & Styling Requirements
-Design System (MMS Brand): Use pure vanilla CSS with CSS variables. Do NOT use Tailwind CSS, but perfectly replicate the deep-dark MolÄDira Skills aesthetic: Deep slate backgrounds (#020617), dark floating cards (#0f172a), and vibrant neon gradients (Orange #f97316 via Pink #d946ef to Purple #a855f7) for primary buttons, active tabs, and logo accents.
+Design System (MMS Brand): Use pure vanilla CSS with CSS variables. Do NOT use Tailwind CSS, but perfectly replicate the deep-dark MolāDira Skills aesthetic: Deep slate backgrounds (#020617), dark floating cards (#0f172a), and vibrant neon gradients (Orange #f97316 via Pink #d946ef to Purple #a855f7) for primary buttons, active tabs, and logo accents.
 
 Mobile Responsiveness: Use flexible CSS Grid/Flexbox layouts that stack perfectly on mobile screens.
 
@@ -99,7 +99,7 @@ Push the static frontend folders to GitHub Pages.
 
 Register a user, then manually set their Account Type to Admin in the Google Sheet.
 
-ðŸ› ï¸ Database Initialization Script
+🛠️ Database Initialization Script
 (Paste into a blank Code.gs file in a new Google Sheet and hit Run once.)
 
 JavaScript
