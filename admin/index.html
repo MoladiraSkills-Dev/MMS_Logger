@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MolāDira Skills (MMS) Corporate Admin Operations Hub. Geolocation Shift Auditing, Timesheets, Leave & Device Approvals.">
+  <meta name="description"
+    content="MolāDira Skills (MMS) Corporate Admin Operations Hub. Geolocation Shift Auditing, Timesheets, Leave & Device Approvals.">
   <title>MolāDira Skills - MMS Admin Operations Hub</title>
   <link rel="stylesheet" href="../shared/css/base.css?v=2.2">
   <link rel="stylesheet" href="admin.css?v=2.2">
 </head>
+
 <body>
 
   <div class="admin-container">
-    
+
     <!-- Admin Header Bar -->
     <header class="admin-header">
       <div class="portal-brand">
@@ -24,7 +27,8 @@
 
       <div class="admin-header-actions">
         <div class="avatar-badge avatar-sm" id="adminAvatar">A</div>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnToggleSelfClock" onclick="toggleAdminAttendancePanel()">
+        <button type="button" class="btn btn-secondary btn-sm" id="btnToggleSelfClock"
+          onclick="toggleAdminAttendancePanel()">
           <span>⏱️</span> Attendance Logging
         </button>
         <button type="button" class="btn btn-secondary btn-sm" id="btnAdminLeave" onclick="openLeaveModal()">
@@ -33,7 +37,8 @@
         <button type="button" class="btn btn-secondary btn-sm" id="btnAdminDevice" onclick="openDeviceModal()">
           <span>💻</span> Device Checkout
         </button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnAdminClientLoggers" onclick="switchAdminTab('loggers')">
+        <button type="button" class="btn btn-secondary btn-sm" id="btnAdminClientLoggers"
+          onclick="switchAdminTab('loggers')">
           <span>🏢</span> Client Loggers
         </button>
         <button type="button" class="btn btn-primary btn-sm" id="btnRefreshData" onclick="loadAdminDashboard(true)">
@@ -150,7 +155,7 @@
         <div class="filter-group">
           <label class="form-label mb-0" for="filterLogDate">Date:</label>
           <input type="date" id="filterLogDate" class="form-control" style="width: auto;" onchange="applyLogFilters()">
-          
+
           <label class="form-label mb-0" for="filterLogAction">Action:</label>
           <select id="filterLogAction" class="form-control" style="width: auto;" onchange="applyLogFilters()">
             <option value="ALL">All Actions</option>
@@ -161,7 +166,8 @@
 
         <div class="search-wrapper" style="min-width: 280px;">
           <span class="search-icon">🔍</span>
-          <input type="text" id="filterLogSearch" class="form-control" placeholder="Search employee name or email..." oninput="applyLogFilters()">
+          <input type="text" id="filterLogSearch" class="form-control" placeholder="Search employee name or email..."
+            oninput="applyLogFilters()">
         </div>
       </div>
 
@@ -191,7 +197,8 @@
       <div class="filter-toolbar">
         <div class="filter-group">
           <label class="form-label mb-0" for="filterDailyDate">Shift Date:</label>
-          <input type="date" id="filterDailyDate" class="form-control" style="width: auto;" onchange="applyDailyFilters()">
+          <input type="date" id="filterDailyDate" class="form-control" style="width: auto;"
+            onchange="applyDailyFilters()">
 
           <label class="form-label mb-0" for="filterDailyStatus">Shift Status:</label>
           <select id="filterDailyStatus" class="form-control" style="width: auto;" onchange="applyDailyFilters()">
@@ -204,7 +211,8 @@
 
         <div class="search-wrapper" style="min-width: 280px;">
           <span class="search-icon">🔍</span>
-          <input type="text" id="filterDailySearch" class="form-control" placeholder="Search employee..." oninput="applyDailyFilters()">
+          <input type="text" id="filterDailySearch" class="form-control" placeholder="Search employee..."
+            oninput="applyDailyFilters()">
         </div>
       </div>
 
@@ -237,7 +245,8 @@
       <div class="filter-toolbar">
         <div class="filter-group">
           <label class="form-label mb-0" for="filterWeeklySearch">Search Employee:</label>
-          <input type="text" id="filterWeeklySearch" class="form-control" placeholder="Filter by name/email..." oninput="applyWeeklyFilters()">
+          <input type="text" id="filterWeeklySearch" class="form-control" placeholder="Filter by name/email..."
+            oninput="applyWeeklyFilters()">
         </div>
       </div>
 
@@ -269,12 +278,14 @@
       <div class="filter-toolbar">
         <div class="filter-group">
           <label class="form-label mb-0" for="filterMonthlyMonth">Month:</label>
-          <input type="month" id="filterMonthlyMonth" class="form-control" style="width: auto;" onchange="applyMonthlyFilters()">
+          <input type="month" id="filterMonthlyMonth" class="form-control" style="width: auto;"
+            onchange="applyMonthlyFilters()">
         </div>
 
         <div class="search-wrapper" style="min-width: 280px;">
           <span class="search-icon">🔍</span>
-          <input type="text" id="filterMonthlySearch" class="form-control" placeholder="Search employee..." oninput="applyMonthlyFilters()">
+          <input type="text" id="filterMonthlySearch" class="form-control" placeholder="Search employee..."
+            oninput="applyMonthlyFilters()">
         </div>
       </div>
 
@@ -386,7 +397,8 @@
 
         <div class="search-wrapper" style="min-width: 280px;">
           <span class="search-icon">🔍</span>
-          <input type="text" id="filterStaffSearch" class="form-control" placeholder="Search staff member..." oninput="applyStaffFilters()">
+          <input type="text" id="filterStaffSearch" class="form-control" placeholder="Search staff member..."
+            oninput="applyStaffFilters()">
         </div>
       </div>
 
@@ -414,7 +426,7 @@
     <!-- TAB 8: TIMESHEET EXPORTS HUB -->
     <section id="contentTabExport" class="card hidden">
       <div class="export-card-grid">
-        
+
         <div class="export-control-panel">
           <h2 class="card-title text-base mb-4">
             <span>📑</span> Export Parameters
@@ -433,7 +445,8 @@
             <div class="range-preset-group">
               <button type="button" class="range-preset-btn" onclick="setDatePreset('today')">Today</button>
               <button type="button" class="range-preset-btn" onclick="setDatePreset('thisWeek')">This Week</button>
-              <button type="button" class="range-preset-btn active" onclick="setDatePreset('thisMonth')">This Month</button>
+              <button type="button" class="range-preset-btn active" onclick="setDatePreset('thisMonth')">This
+                Month</button>
               <button type="button" class="range-preset-btn" onclick="setDatePreset('lastMonth')">Last Month</button>
             </div>
           </div>
@@ -470,11 +483,17 @@
           </p>
 
           <ul style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.8; margin-left: 1.25rem;">
-            <li><strong>Floor Times Mandatory:</strong> Start and End times on PDF and CSV are drawn directly from the audited Floor Time calculations.</li>
-            <li><strong>Standard Anchors:</strong> Non-edited shifts anchor to 08:00 - 17:00 (13:00 on Saturdays) with 1-hour lunch deducted for shifts over 5 hours.</li>
-            <li><strong>Overtime Masking:</strong> Overtime is masked to 0 hours on the PDF unless an Admin explicitly edited the shift, where overtime is mathematically rounded to whole hours.</li>
-            <li><strong>Leave Abbreviations:</strong> Leave days are dynamically annotated as <code>SL</code> (Sick), <code>AL</code> (Annual), or <code>FL</code> (Family).</li>
-            <li><strong>Sign-off Section:</strong> Includes mandatory Employee Signature and Manager/Supervisor verification spaces.</li>
+            <li><strong>Floor Times Mandatory:</strong> Start and End times on PDF and CSV are drawn directly from the
+              audited Floor Time calculations.</li>
+            <li><strong>Standard Anchors:</strong> Non-edited shifts anchor to 08:00 - 17:00 (13:00 on Saturdays) with
+              1-hour lunch deducted for shifts over 5 hours.</li>
+            <li><strong>Overtime Masking:</strong> Overtime is masked to 0 hours on the PDF unless an Admin explicitly
+              edited the shift, where overtime is mathematically rounded to whole hours.</li>
+            <li><strong>Leave Abbreviations:</strong> Leave days are dynamically annotated as <code>SL</code> (Sick),
+              <code>AL</code> (Annual), or <code>FL</code> (Family).
+            </li>
+            <li><strong>Sign-off Section:</strong> Includes mandatory Employee Signature and Manager/Supervisor
+              verification spaces.</li>
           </ul>
 
           <div id="exportStatusBox" class="alert alert-info mt-auto mb-0 hidden">
@@ -505,13 +524,18 @@
       <!-- Filter Toolbar -->
       <div class="client-loggers-toolbar">
         <div class="category-filter-pills" id="loggerCategoryPills">
-          <button type="button" class="category-pill active" onclick="filterLoggersByCategory('ALL', this)">All Portals</button>
-          <button type="button" class="category-pill" onclick="filterLoggersByCategory('Banking & Corporate', this)">Banking & Corporate</button>
-          <button type="button" class="category-pill" onclick="filterLoggersByCategory('Fibre & Infrastructure', this)">Fibre & Infrastructure</button>
-          <button type="button" class="category-pill" onclick="filterLoggersByCategory('CRM & Pipeline', this)">CRM & Pipeline</button>
+          <button type="button" class="category-pill active" onclick="filterLoggersByCategory('ALL', this)">All
+            Portals</button>
+          <button type="button" class="category-pill"
+            onclick="filterLoggersByCategory('Banking & Corporate', this)">Banking & Corporate</button>
+          <button type="button" class="category-pill"
+            onclick="filterLoggersByCategory('Fibre & Infrastructure', this)">Fibre & Infrastructure</button>
+          <button type="button" class="category-pill" onclick="filterLoggersByCategory('CRM & Pipeline', this)">CRM &
+            Pipeline</button>
         </div>
         <div class="filter-group ml-auto" style="min-width: 260px;">
-          <input type="text" id="searchClientLoggers" class="form-control" placeholder="Search client name, title, or URL..." oninput="handleSearchClientLoggers(this.value)">
+          <input type="text" id="searchClientLoggers" class="form-control"
+            placeholder="Search client name, title, or URL..." oninput="handleSearchClientLoggers(this.value)">
         </div>
       </div>
 
@@ -534,24 +558,31 @@
               </span>
             </div>
 
-            <p class="client-logger-desc">Corporate logsheet and shift attendance system for FNB contract personnel, branch audits, and timesheet compliance.</p>
+            <p class="client-logger-desc">Corporate logsheet and shift attendance system for FNB contract personnel,
+              branch audits, and timesheet compliance.</p>
 
             <div class="client-logger-meta">
-              <span class="client-logger-url" title="https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec">https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec', 'First National Bank (FNB)')" title="Copy URL">
+              <span class="client-logger-url"
+                title="https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec">https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec</span>
+              <button type="button" class="btn btn-secondary btn-sm"
+                style="padding: 0.25rem 0.55rem; font-size: 0.7rem;"
+                onclick="copyLoggerUrl('https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec', 'First National Bank (FNB)')"
+                title="Copy URL">
                 📋 Copy
               </button>
             </div>
           </div>
 
           <div class="client-logger-actions">
-            <a href="https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <a href="https://script.google.com/macros/s/AKfycbxV-FEG6dHv-17k1QN_amrYJmrlaGdL7oeQgLix0pSZ57CqeN-a-LJsZa0HFP3SqOb_/exec"
+              target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
               <span>🚀</span> Launch Portal
             </a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('fnb-logsheet')">
               <span>👁️</span> Preview / Details
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fnb-logsheet')" title="Edit Logger Config">
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;"
+              onclick="openAddLoggerModal('fnb-logsheet')" title="Edit Logger Config">
               <span>✏️</span>
             </button>
           </div>
@@ -574,24 +605,31 @@
               </span>
             </div>
 
-            <p class="client-logger-desc">Real-time field technician and agent operations dashboard for tracking site visits, fibre drop surveys, and installations.</p>
+            <p class="client-logger-desc">Real-time field technician and agent operations dashboard for tracking site
+              visits, fibre drop surveys, and installations.</p>
 
             <div class="client-logger-meta">
-              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html">https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html', 'Fibre Field Operations')" title="Copy URL">
+              <span class="client-logger-url"
+                title="https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html">https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html</span>
+              <button type="button" class="btn btn-secondary btn-sm"
+                style="padding: 0.25rem 0.55rem; font-size: 0.7rem;"
+                onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html', 'Fibre Field Operations')"
+                title="Copy URL">
                 📋 Copy
               </button>
             </div>
           </div>
 
           <div class="client-logger-actions">
-            <a href="https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <a href="https://moladiraskills-dev.github.io/Fibre_Field_Ops/dashboards/agent/index.html" target="_blank"
+              rel="noopener noreferrer" class="btn btn-primary btn-sm">
               <span>🚀</span> Launch Portal
             </a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('fibre-field-ops')">
               <span>👁️</span> Preview / Details
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fibre-field-ops')" title="Edit Logger Config">
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;"
+              onclick="openAddLoggerModal('fibre-field-ops')" title="Edit Logger Config">
               <span>✏️</span>
             </button>
           </div>
@@ -614,24 +652,31 @@
               </span>
             </div>
 
-            <p class="client-logger-desc">Centralized administrator and supervisor portal for SADV infrastructure rollouts, technician attendance, and contractor shifts.</p>
+            <p class="client-logger-desc">Centralized administrator and supervisor portal for SADV infrastructure
+              rollouts, technician attendance, and contractor shifts.</p>
 
             <div class="client-logger-meta">
-              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html">https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html', 'SADV (South Atlantic Distributed Ventures)')" title="Copy URL">
+              <span class="client-logger-url"
+                title="https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html">https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html</span>
+              <button type="button" class="btn btn-secondary btn-sm"
+                style="padding: 0.25rem 0.55rem; font-size: 0.7rem;"
+                onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html', 'SADV (South African Digital Villages)')"
+                title="Copy URL">
                 📋 Copy
               </button>
             </div>
           </div>
 
           <div class="client-logger-actions">
-            <a href="https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <a href="https://moladiraskills-dev.github.io/SADV_Logger/admin/index.html" target="_blank"
+              rel="noopener noreferrer" class="btn btn-primary btn-sm">
               <span>🚀</span> Launch Portal
             </a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('sadv-logger')">
               <span>👁️</span> Preview / Details
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('sadv-logger')" title="Edit Logger Config">
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;"
+              onclick="openAddLoggerModal('sadv-logger')" title="Edit Logger Config">
               <span>✏️</span>
             </button>
           </div>
@@ -654,24 +699,31 @@
               </span>
             </div>
 
-            <p class="client-logger-desc">Enterprise client engagement portal, sales coverage tracker, lead progression pipeline, and customer relationship database.</p>
+            <p class="client-logger-desc">Enterprise client engagement portal, sales coverage tracker, lead progression
+              pipeline, and customer relationship database.</p>
 
             <div class="client-logger-meta">
-              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/FibreGemsCRM/index.html">https://moladiraskills-dev.github.io/FibreGemsCRM/index.html</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/FibreGemsCRM/index.html', 'FibreGems Group')" title="Copy URL">
+              <span class="client-logger-url"
+                title="https://moladiraskills-dev.github.io/FibreGemsCRM/index.html">https://moladiraskills-dev.github.io/FibreGemsCRM/index.html</span>
+              <button type="button" class="btn btn-secondary btn-sm"
+                style="padding: 0.25rem 0.55rem; font-size: 0.7rem;"
+                onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/FibreGemsCRM/index.html', 'FibreGems Group')"
+                title="Copy URL">
                 📋 Copy
               </button>
             </div>
           </div>
 
           <div class="client-logger-actions">
-            <a href="https://moladiraskills-dev.github.io/FibreGemsCRM/index.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <a href="https://moladiraskills-dev.github.io/FibreGemsCRM/index.html" target="_blank"
+              rel="noopener noreferrer" class="btn btn-primary btn-sm">
               <span>🚀</span> Launch Portal
             </a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('fibregems-crm')">
               <span>👁️</span> Preview / Details
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fibregems-crm')" title="Edit Logger Config">
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;"
+              onclick="openAddLoggerModal('fibregems-crm')" title="Edit Logger Config">
               <span>✏️</span>
             </button>
           </div>
@@ -694,24 +746,31 @@
               </span>
             </div>
 
-            <p class="client-logger-desc">Corporate employee check-in, shift management, geolocation attendance tracking, and leave portal for CDA Solutions.</p>
+            <p class="client-logger-desc">Corporate employee check-in, shift management, geolocation attendance
+              tracking, and leave portal for CDA Solutions.</p>
 
             <div class="client-logger-meta">
-              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/CDA_Logger/">https://moladiraskills-dev.github.io/CDA_Logger/</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/CDA_Logger/', 'CDA Solutions')" title="Copy URL">
+              <span class="client-logger-url"
+                title="https://moladiraskills-dev.github.io/CDA_Logger/">https://moladiraskills-dev.github.io/CDA_Logger/</span>
+              <button type="button" class="btn btn-secondary btn-sm"
+                style="padding: 0.25rem 0.55rem; font-size: 0.7rem;"
+                onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/CDA_Logger/', 'CDA Solutions')"
+                title="Copy URL">
                 📋 Copy
               </button>
             </div>
           </div>
 
           <div class="client-logger-actions">
-            <a href="https://moladiraskills-dev.github.io/CDA_Logger/" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <a href="https://moladiraskills-dev.github.io/CDA_Logger/" target="_blank" rel="noopener noreferrer"
+              class="btn btn-primary btn-sm">
               <span>🚀</span> Launch Portal
             </a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('cda-logger')">
               <span>👁️</span> Preview / Details
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('cda-logger')" title="Edit Logger Config">
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;"
+              onclick="openAddLoggerModal('cda-logger')" title="Edit Logger Config">
               <span>✏️</span>
             </button>
           </div>
@@ -722,18 +781,21 @@
     <!-- Footer Information -->
     <footer class="text-center mt-6 pt-4">
       <p class="text-xs text-dim">
-        MolāDira Skills (Pty) Ltd &bull; Geolocation Attendance & Shift Management Platform &bull; BBBEE Level 1 Certified
+        MolāDira Skills (Pty) Ltd &bull; Geolocation Attendance & Shift Management Platform &bull; BBBEE Level 1
+        Certified
       </p>
     </footer>
 
   </div>
 
   <!-- MODAL: EDIT SHIFT -->
-  <div id="editShiftModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editShiftTitle">
+  <div id="editShiftModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="editShiftTitle">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title" id="editShiftTitle">✏️ Admin Edit Shift Telemetry</h3>
-        <button type="button" class="modal-close" onclick="closeEditShiftModal()" aria-label="Close Modal">&times;</button>
+        <button type="button" class="modal-close" onclick="closeEditShiftModal()"
+          aria-label="Close Modal">&times;</button>
       </div>
       <form id="editShiftForm" onsubmit="handleEditShiftSubmit(event)">
         <div class="modal-body">
@@ -760,7 +822,8 @@
           </div>
 
           <p class="text-xs text-dim mt-2">
-            ⚠️ <em>Note: Admin edits set <code>isAdminEdit = true</code>, which overrides baseline 08:00/17:00 anchors and unlocks exact early departures and mathematical overtime on timesheets.</em>
+            ⚠️ <em>Note: Admin edits set <code>isAdminEdit = true</code>, which overrides baseline 08:00/17:00 anchors
+              and unlocks exact early departures and mathematical overtime on timesheets.</em>
           </p>
         </div>
         <div class="modal-footer">
@@ -772,11 +835,13 @@
   </div>
 
   <!-- MODAL: EDIT STAFF PROFILE -->
-  <div id="editStaffModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editStaffTitle">
+  <div id="editStaffModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="editStaffTitle">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title" id="editStaffTitle">👤 Update Staff Profile</h3>
-        <button type="button" class="modal-close" onclick="closeEditStaffModal()" aria-label="Close Modal">&times;</button>
+        <button type="button" class="modal-close" onclick="closeEditStaffModal()"
+          aria-label="Close Modal">&times;</button>
       </div>
       <form id="editStaffForm" onsubmit="handleEditStaffSubmit(event)">
         <div class="modal-body">
@@ -816,11 +881,13 @@
   </div>
 
   <!-- MODAL: RESET PASSWORD -->
-  <div id="resetPasswordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="resetPasswordTitle">
+  <div id="resetPasswordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="resetPasswordTitle">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title" id="resetPasswordTitle">🔑 Reset Staff Password</h3>
-        <button type="button" class="modal-close" onclick="closeResetPasswordModal()" aria-label="Close Modal">&times;</button>
+        <button type="button" class="modal-close" onclick="closeResetPasswordModal()"
+          aria-label="Close Modal">&times;</button>
       </div>
       <form id="resetPasswordForm" onsubmit="handleResetPasswordSubmit(event)">
         <div class="modal-body">
@@ -836,7 +903,8 @@
 
           <div class="form-group">
             <label class="form-label" for="confirmNewPassword">Confirm Password</label>
-            <input type="password" id="confirmNewPassword" class="form-control" placeholder="Re-enter password" required>
+            <input type="password" id="confirmNewPassword" class="form-control" placeholder="Re-enter password"
+              required>
           </div>
         </div>
         <div class="modal-footer">
@@ -890,7 +958,8 @@
   </div>
 
   <!-- Shared Device Checkout Modal (Usable by Admin) -->
-  <div id="deviceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="deviceModalTitle">
+  <div id="deviceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="deviceModalTitle">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title" id="deviceModalTitle">💻 Device & Equipment Checkout</h3>
@@ -914,7 +983,8 @@
 
           <div class="form-group">
             <label class="form-label" for="deviceIdentifier">Asset Tag / Serial / Model</label>
-            <input type="text" id="deviceIdentifier" class="form-control" placeholder="e.g. MMS-LT-042 / Dell Latitude 5420" required>
+            <input type="text" id="deviceIdentifier" class="form-control"
+              placeholder="e.g. MMS-LT-042 / Dell Latitude 5420" required>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -930,7 +1000,8 @@
 
           <div class="form-group">
             <label class="form-label" for="deviceReason">Business Purpose / Assignment</label>
-            <textarea id="deviceReason" class="form-control" placeholder="Specify project, site visit, or assignment reason..." required></textarea>
+            <textarea id="deviceReason" class="form-control"
+              placeholder="Specify project, site visit, or assignment reason..." required></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -942,7 +1013,8 @@
   </div>
 
   <!-- MODAL: PREVIEW INLINE CLIENT LOGGER -->
-  <div id="previewLoggerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="previewLoggerTitle">
+  <div id="previewLoggerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="previewLoggerTitle">
     <div class="modal-dialog preview-portal-dialog">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -956,37 +1028,46 @@
           <a id="previewExternalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
             <span>↗</span> Open in New Window
           </a>
-          <button type="button" class="modal-close" onclick="closePreviewLoggerModal()" aria-label="Close Modal">&times;</button>
+          <button type="button" class="modal-close" onclick="closePreviewLoggerModal()"
+            aria-label="Close Modal">&times;</button>
         </div>
       </div>
       <div class="modal-body preview-portal-body">
-        <div id="previewLoader" class="flex flex-col items-center justify-center p-8 text-center" style="height: 100%; position: absolute; inset: 0; background: #020617; z-index: 5;">
+        <div id="previewLoader" class="flex flex-col items-center justify-center p-8 text-center"
+          style="height: 100%; position: absolute; inset: 0; background: #020617; z-index: 5;">
           <div class="spinner-disc mb-3"></div>
           <p class="text-sm font-bold text-main" id="previewLoaderText">Connecting to secure client portal...</p>
-          <p class="text-xs text-muted mt-1">If the remote portal denies inline embedding due to third-party framing policies, use "Open in New Window".</p>
+          <p class="text-xs text-muted mt-1">If the remote portal denies inline embedding due to third-party framing
+            policies, use "Open in New Window".</p>
         </div>
-        <iframe id="previewLoggerIframe" class="preview-portal-iframe" src="" allow="geolocation; camera; microphone; clipboard-read; clipboard-write;" onload="handleIframeLoaded()"></iframe>
+        <iframe id="previewLoggerIframe" class="preview-portal-iframe" src=""
+          allow="geolocation; camera; microphone; clipboard-read; clipboard-write;"
+          onload="handleIframeLoaded()"></iframe>
       </div>
     </div>
   </div>
 
   <!-- MODAL: ADD / EDIT CLIENT LOGGER -->
-  <div id="editLoggerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editLoggerModalTitle">
+  <div id="editLoggerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="editLoggerModalTitle">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title" id="editLoggerModalTitle">🏢 Configure Client Logger</h3>
-        <button type="button" class="modal-close" onclick="closeEditLoggerModal()" aria-label="Close Modal">&times;</button>
+        <button type="button" class="modal-close" onclick="closeEditLoggerModal()"
+          aria-label="Close Modal">&times;</button>
       </div>
       <form id="editLoggerForm" onsubmit="handleSaveClientLogger(event)">
         <input type="hidden" id="editLoggerId">
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label" for="loggerClientName">Client / Organization Name *</label>
-            <input type="text" id="loggerClientName" class="form-control" placeholder="e.g. First National Bank, SADV, FibreGems..." required>
+            <input type="text" id="loggerClientName" class="form-control"
+              placeholder="e.g. First National Bank, SADV, FibreGems..." required>
           </div>
           <div class="form-group">
             <label class="form-label" for="loggerTitle">Logger Portal Title *</label>
-            <input type="text" id="loggerTitle" class="form-control" placeholder="e.g. Field Operations & Attendance Hub" required>
+            <input type="text" id="loggerTitle" class="form-control"
+              placeholder="e.g. Field Operations & Attendance Hub" required>
           </div>
           <div class="form-group">
             <label class="form-label" for="loggerUrl">Target Endpoint / Web Portal URL *</label>
@@ -1017,7 +1098,8 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="loggerDesc">Portal Description / Guidelines</label>
-            <textarea id="loggerDesc" class="form-control" placeholder="Provide context regarding contract requirements, site deployments, or instructions..."></textarea>
+            <textarea id="loggerDesc" class="form-control"
+              placeholder="Provide context regarding contract requirements, site deployments, or instructions..."></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -1032,4 +1114,5 @@
   <script src="../shared/js/leave_device.js"></script>
   <script src="admin.js?v=2.2"></script>
 </body>
+
 </html>
