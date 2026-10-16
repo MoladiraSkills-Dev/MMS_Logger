@@ -140,7 +140,7 @@
       </button>
       <button type="button" id="tabBtnLoggers" class="nav-tab-btn" onclick="switchAdminTab('loggers')">
         <span>🏢</span> Client Loggers
-        <span id="tabBadgeLoggers" class="tab-badge tab-badge-info">4</span>
+        <span id="tabBadgeLoggers" class="tab-badge tab-badge-info">5</span>
       </button>
     </nav>
 
@@ -672,6 +672,46 @@
               <span>👁️</span> Preview / Details
             </button>
             <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('fibregems-crm')" title="Edit Logger Config">
+              <span>✏️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 5: CDA Solutions -->
+        <div class="client-logger-card theme-blue" id="card-logger-cda-logger">
+          <div>
+            <div class="client-logger-top">
+              <div class="client-logger-brand">
+                <div class="client-logger-icon-box">💼</div>
+                <div class="client-logger-info">
+                  <span class="client-tag">Banking &amp; Corporate &bull; CDA Corporate</span>
+                  <h3>CDA Solutions</h3>
+                  <div class="text-xs font-semibold text-gradient">CDA Solutions - Attendance &amp; Shift Logger</div>
+                </div>
+              </div>
+              <span class="client-logger-status">
+                <span class="status-dot"></span> Active Gateway
+              </span>
+            </div>
+
+            <p class="client-logger-desc">Corporate employee check-in, shift management, geolocation attendance tracking, and leave portal for CDA Solutions.</p>
+
+            <div class="client-logger-meta">
+              <span class="client-logger-url" title="https://moladiraskills-dev.github.io/CDA_Logger/">https://moladiraskills-dev.github.io/CDA_Logger/</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.7rem;" onclick="copyLoggerUrl('https://moladiraskills-dev.github.io/CDA_Logger/', 'CDA Solutions')" title="Copy URL">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="client-logger-actions">
+            <a href="https://moladiraskills-dev.github.io/CDA_Logger/" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <span>🚀</span> Launch Portal
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="previewClientLogger('cda-logger')">
+              <span>👁️</span> Preview / Details
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" style="max-width: 44px; padding: 0.4rem 0.6rem;" onclick="openAddLoggerModal('cda-logger')" title="Edit Logger Config">
               <span>✏️</span>
             </button>
           </div>

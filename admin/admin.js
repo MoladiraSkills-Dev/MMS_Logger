@@ -1304,6 +1304,18 @@ const DEFAULT_CLIENT_LOGGERS = [
     badge: "Enterprise CRM",
     desc: "Enterprise client engagement portal, sales coverage tracker, lead progression pipeline, and customer relationship database.",
     isDefault: true
+  },
+  {
+    id: "cda-logger",
+    client: "CDA Solutions",
+    title: "CDA Solutions - Attendance & Shift Logger",
+    url: "https://moladiraskills-dev.github.io/CDA_Logger/",
+    category: "Banking & Corporate",
+    theme: "blue",
+    icon: "💼",
+    badge: "CDA Corporate",
+    desc: "Corporate employee check-in, shift management, geolocation attendance tracking, and leave portal for CDA Solutions.",
+    isDefault: true
   }
 ];
 
