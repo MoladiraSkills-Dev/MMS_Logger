@@ -145,6 +145,9 @@ async function loadAdminDashboard(showToastFeedback = false) {
       // Update KPI Stat Counters & Tab Badges
       try { updateKpis(res); } catch (e) { console.error("Error updating KPIs:", e); }
 
+      // Update Admin Self-Attendance tactile buttons
+      try { updateAdminTactileButtonStates(); } catch (e) { console.error("Error updating admin clock states:", e); }
+
       // Populate Export Staff Dropdown
       try { populateExportStaffDropdown(CACHED_STAFF); } catch (e) { console.error("Error populating staff dropdown:", e); }
 
@@ -858,8 +861,119 @@ function toggleAdminAttendancePanel() {
   panel.classList.toggle("hidden");
 }
 
+function updateAdminTactileButtonStates() {
+  const btnIn = document.getElementById("btnAdminClockIn");
+  const badgeIn = document.getElementById("adminClockInStatusBadge");
+  const subIn = document.getElementById("adminClockInSubtext");
+
+  const btnOut = document.getElementById("btnAdminClockOut");
+  const badgeOut = document.getElementById("adminClockOutStatusBadge");
+  const subOut = document.getElementById("adminClockOutSubtext");
+  const panelBadge = document.getElementById("adminSelfStatusBadge");
+
+  if (!btnIn || !btnOut || !CURRENT_ADMIN || !CURRENT_ADMIN.user) return;
+
+  const adminEmail = CURRENT_ADMIN.user.email.trim().toLowerCase();
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const adminShift = CACHED_DAILY.find(s => 
+    String(s.email).trim().toLowerCase() === adminEmail && 
+    String(s.date).trim() === todayStr
+  );
+
+  const adminClockInLog = CACHED_LOGS.find(l => 
+    String(l.email).trim().toLowerCase() === adminEmail && 
+    String(l.date).trim() === todayStr && 
+    String(l.action).trim() === "Clock In"
+  );
+
+  const adminClockOutLog = CACHED_LOGS.find(l => 
+    String(l.email).trim().toLowerCase() === adminEmail && 
+    String(l.date).trim() === todayStr && 
+    String(l.action).trim() === "Clock Out"
+  );
+
+  const hasClockedIn = !!adminClockInLog || (adminShift && adminShift.clockIn && adminShift.clockIn !== "--");
+  const hasClockedOut = !!adminClockOutLog || (adminShift && adminShift.status === "Completed" && adminShift.clockOut && adminShift.clockOut !== "--");
+
+  if (hasClockedOut) {
+    btnIn.disabled = true;
+    btnIn.title = "Shift already completed today";
+    if (badgeIn) {
+      badgeIn.classList.remove("hidden");
+      badgeIn.innerText = "✓ Shift Completed";
+    }
+    btnOut.disabled = true;
+    btnOut.title = "Shift already completed today";
+    if (badgeOut) {
+      badgeOut.classList.remove("hidden");
+      badgeOut.innerText = `✓ Shift Completed (${adminShift ? adminShift.clockOut : "Logged"})`;
+    }
+    if (subOut) subOut.innerText = "Shift finalized for today";
+    if (panelBadge) {
+      panelBadge.className = "badge badge-success";
+      panelBadge.innerText = "Shift Completed";
+    }
+  } else if (hasClockedIn) {
+    btnIn.disabled = true;
+    btnIn.title = "Already clocked in today";
+    if (badgeIn) {
+      badgeIn.classList.remove("hidden");
+      badgeIn.innerText = `✓ Clocked In at ${adminClockInLog ? adminClockInLog.time : (adminShift ? adminShift.clockIn : "")}`;
+    }
+    btnOut.disabled = false;
+    btnOut.title = "Conclude your admin shift";
+    if (badgeOut) badgeOut.classList.add("hidden");
+    if (subOut) subOut.innerText = "Log shift conclusion with GPS";
+    if (panelBadge) {
+      panelBadge.className = "badge badge-warning";
+      panelBadge.innerText = "Shift In Progress";
+    }
+  } else {
+    btnIn.disabled = false;
+    btnIn.title = "Clock in to start your admin shift";
+    if (badgeIn) badgeIn.classList.add("hidden");
+    if (subIn) subIn.innerText = "Log morning shift start with GPS";
+
+    btnOut.disabled = true;
+    btnOut.title = "You cannot clock out because you have not clocked in for today yet";
+    if (badgeOut) {
+      badgeOut.classList.remove("hidden");
+      badgeOut.innerText = "Clock-In Required";
+    }
+    if (subOut) subOut.innerText = "Clock in first to enable clock out";
+    if (panelBadge) {
+      panelBadge.className = "badge badge-info";
+      panelBadge.innerText = "Shift Not Started";
+    }
+  }
+}
+
 async function handleAdminSelfClock(action) {
   const user = CURRENT_ADMIN.user;
+
+  // Strict guard: Do not allow Clock Out unless clocked in today
+  if (action === "Clock Out") {
+    const adminEmail = user.email.trim().toLowerCase();
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const hasClockedIn = CACHED_LOGS.some(l => 
+      String(l.email).trim().toLowerCase() === adminEmail && 
+      String(l.date).trim() === todayStr && 
+      String(l.action).trim() === "Clock In"
+    ) || CACHED_DAILY.some(s => 
+      String(s.email).trim().toLowerCase() === adminEmail && 
+      String(s.date).trim() === todayStr && 
+      s.clockIn && s.clockIn !== "--"
+    );
+
+    if (!hasClockedIn) {
+      showToast("Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning", "Clock-In Required");
+      return;
+    }
+  }
+
   const isClockIn = action === "Clock In";
 
   const confirmed = await showConfirmModal({

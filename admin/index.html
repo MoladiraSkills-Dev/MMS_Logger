@@ -63,15 +63,17 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button type="button" class="btn-tactile btn-tactile-in" onclick="handleAdminSelfClock('Clock In')">
+        <button type="button" class="btn-tactile btn-tactile-in" id="btnAdminClockIn" onclick="handleAdminSelfClock('Clock In')">
           <span class="btn-tactile-icon">📍</span>
           <span>Clock In (Admin)</span>
-          <span class="btn-tactile-subtitle">Log morning shift start with GPS</span>
+          <span class="btn-tactile-subtitle" id="adminClockInSubtext">Log morning shift start with GPS</span>
+          <span class="btn-tactile-status hidden" id="adminClockInStatusBadge">✓ Logged Today</span>
         </button>
-        <button type="button" class="btn-tactile btn-tactile-out" onclick="handleAdminSelfClock('Clock Out')">
+        <button type="button" class="btn-tactile btn-tactile-out" id="btnAdminClockOut" onclick="handleAdminSelfClock('Clock Out')" disabled title="You cannot clock out until you have clocked in for today">
           <span class="btn-tactile-icon">🏁</span>
           <span>Clock Out (Admin)</span>
-          <span class="btn-tactile-subtitle">Log shift conclusion with GPS</span>
+          <span class="btn-tactile-subtitle" id="adminClockOutSubtext">Clock in first to enable clock out</span>
+          <span class="btn-tactile-status" id="adminClockOutStatusBadge">Clock-In Required</span>
         </button>
       </div>
     </section>

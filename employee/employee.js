@@ -7,6 +7,7 @@
 
 let CURRENT_SESSION = null;
 let SHIFT_PROGRESS_INTERVAL = null;
+let CURRENT_TODAY_SHIFT = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   CURRENT_SESSION = requireSession(null, "../index.html");
@@ -63,6 +64,7 @@ async function loadEmployeeData() {
     const res = await callApi("getEmployeePortalData", { email });
 
     if (res && res.status === "success") {
+      CURRENT_TODAY_SHIFT = res.todayShift || null;
       try { renderTodayShift(res.todayShift); } catch (e) { console.error("Error rendering today shift:", e); }
       try { renderRecentLogs(res.recentLogs || []); } catch (e) { console.error("Error rendering recent logs:", e); }
       try { renderMyLeaves(res.leaveRequests || []); } catch (e) { console.error("Error rendering leaves:", e); }
@@ -92,25 +94,30 @@ function updateTactileButtonStates(shift) {
 
   if (!btnIn || !btnOut) return;
 
-  if (shift && shift.status === "Completed") {
+  const isCompleted = shift && shift.status === "Completed";
+  const isInProgress = shift && shift.status === "In Progress" && shift.clockIn && shift.clockIn !== "--";
+
+  if (isCompleted) {
     // Both completed
     btnIn.disabled = true;
-    btnIn.style.opacity = "0.65";
+    btnIn.title = "Shift already completed today";
     if (badgeIn) {
       badgeIn.classList.remove("hidden");
       badgeIn.innerText = `✓ Shift Completed (${shift.clockIn})`;
     }
+    if (subIn) subIn.innerText = "Shift finalized for today";
 
     btnOut.disabled = true;
-    btnOut.style.opacity = "0.65";
+    btnOut.title = "Shift already completed today";
     if (badgeOut) {
       badgeOut.classList.remove("hidden");
       badgeOut.innerText = `✓ Shift Completed (${shift.clockOut})`;
     }
-  } else if (shift && shift.status === "In Progress") {
-    // Clock In done, Clock Out active
+    if (subOut) subOut.innerText = "Shift finalized for today";
+  } else if (isInProgress) {
+    // Clock In done, Clock Out active and allowed
     btnIn.disabled = true;
-    btnIn.style.opacity = "0.75";
+    btnIn.title = "Already clocked in today";
     if (badgeIn) {
       badgeIn.classList.remove("hidden");
       badgeIn.innerText = `✓ Clocked In at ${shift.clockIn}`;
@@ -118,20 +125,23 @@ function updateTactileButtonStates(shift) {
     if (subIn) subIn.innerText = `Shift active since ${shift.floorIn || shift.clockIn}`;
 
     btnOut.disabled = false;
-    btnOut.style.opacity = "1";
+    btnOut.title = "Conclude your shift for today";
     if (badgeOut) badgeOut.classList.add("hidden");
     if (subOut) subOut.innerText = "Conclude daily shift & GPS";
   } else {
-    // Shift not started
+    // Shift not started: User HAS NOT clocked in today -> Clock Out strictly disabled
     btnIn.disabled = false;
-    btnIn.style.opacity = "1";
+    btnIn.title = "Clock in to start your shift";
     if (badgeIn) badgeIn.classList.add("hidden");
     if (subIn) subIn.innerText = "Record shift start & GPS";
 
-    btnOut.disabled = false;
-    btnOut.style.opacity = "1";
-    if (badgeOut) badgeOut.classList.add("hidden");
-    if (subOut) subOut.innerText = "Conclude daily shift & GPS";
+    btnOut.disabled = true;
+    btnOut.title = "You cannot clock out because you have not clocked in for today yet";
+    if (badgeOut) {
+      badgeOut.classList.remove("hidden");
+      badgeOut.innerText = "Clock-In Required";
+    }
+    if (subOut) subOut.innerText = "Clock in first to enable clock out";
   }
 }
 
@@ -288,6 +298,19 @@ function renderMyDevices(devices) {
 async function handleClockAction(action) {
   hideAlert("employeeAlert");
   const user = CURRENT_SESSION.user;
+
+  // Strict guard: Do not allow Clock Out unless clocked in today
+  if (action === "Clock Out") {
+    const hasClockedIn = CURRENT_TODAY_SHIFT && 
+                         CURRENT_TODAY_SHIFT.status === "In Progress" && 
+                         CURRENT_TODAY_SHIFT.clockIn && 
+                         CURRENT_TODAY_SHIFT.clockIn !== "--";
+    if (!hasClockedIn) {
+      showToast("Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning", "Clock-In Required");
+      showAlert("employeeAlert", "Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning");
+      return;
+    }
+  }
 
   // Custom Seamless Confirmation Modal (replaces browser confirm)
   const isClockIn = action === "Clock In";

@@ -552,6 +552,16 @@ a:hover {
   transform: translateY(1px) scale(0.99);
 }
 
+.btn-tactile:disabled,
+.btn-tactile[disabled] {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+  filter: grayscale(40%) !important;
+}
+
 .btn-tactile-icon {
   font-size: 2.35rem;
   line-height: 1;
