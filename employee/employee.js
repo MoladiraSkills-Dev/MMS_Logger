@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function switchEmpTab(tabName) {
-  const tabs = ['logs', 'leaves', 'devices'];
+  const tabs = ['leaves', 'devices'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tabBtn${capitalize(t)}`);
     const content = document.getElementById(`tabContent${capitalize(t)}`);
@@ -66,7 +66,6 @@ async function loadEmployeeData() {
     if (res && res.status === "success") {
       CURRENT_TODAY_SHIFT = res.todayShift || null;
       try { renderTodayShift(res.todayShift); } catch (e) { console.error("Error rendering today shift:", e); }
-      try { renderRecentLogs(res.recentLogs || []); } catch (e) { console.error("Error rendering recent logs:", e); }
       try { renderMyLeaves(res.leaveRequests || []); } catch (e) { console.error("Error rendering leaves:", e); }
       try { renderMyDevices(res.deviceRequests || []); } catch (e) { console.error("Error rendering devices:", e); }
       try { updateTactileButtonStates(res.todayShift); } catch (e) { console.error("Error updating button states:", e); }
@@ -211,37 +210,6 @@ function renderTodayShift(shift) {
   }
 }
 
-function renderRecentLogs(logs) {
-  const tbody = document.getElementById("empLogsBody");
-  if (!tbody) return;
-
-  if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" class="table-empty">No activity logs recorded yet.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = logs.map(log => {
-    const isClockIn = log.action === "Clock In";
-    const badgeClass = isClockIn ? "badge-success" : "badge-danger";
-    const icon = isClockIn ? "📍" : "🏁";
-
-    return `
-      <tr>
-        <td>
-          <div class="font-bold">${escapeHtml(log.date)}</div>
-          <div class="text-xs text-dim font-mono">${escapeHtml(log.time)}</div>
-        </td>
-        <td>
-          <span class="badge ${badgeClass}">${icon} ${escapeHtml(log.action)}</span>
-        </td>
-        <td>
-          <div class="text-sm">${escapeHtml(log.location || "Physical location resolved")}</div>
-          ${log.editedBy ? `<span class="badge badge-warning text-xs mt-1">Edited by ${escapeHtml(log.editedBy)}</span>` : ""}
-        </td>
-      </tr>
-    `;
-  }).join("");
-}
 
 function renderMyLeaves(leaves) {
   const tbody = document.getElementById("empLeavesBody");

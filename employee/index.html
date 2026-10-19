@@ -133,13 +133,10 @@
       </div>
     </section>
 
-    <!-- Tabs for Activity Logs, Leave History & Device History -->
+    <!-- Tabs for Leave History & Device History -->
     <section class="card" aria-label="Employee Activity and Requests">
       <nav class="nav-tabs" aria-label="Employee Tabs">
-        <button type="button" id="tabBtnLogs" class="nav-tab-btn active" onclick="switchEmpTab('logs')">
-          <span>📋</span> Recent Telemetry
-        </button>
-        <button type="button" id="tabBtnLeaves" class="nav-tab-btn" onclick="switchEmpTab('leaves')">
+        <button type="button" id="tabBtnLeaves" class="nav-tab-btn active" onclick="switchEmpTab('leaves')">
           <span>🌴</span> My Leaves
         </button>
         <button type="button" id="tabBtnDevices" class="nav-tab-btn" onclick="switchEmpTab('devices')">
@@ -147,28 +144,8 @@
         </button>
       </nav>
 
-      <!-- Tab Content: Recent Activity Logs -->
-      <div id="tabContentLogs" class="mt-4">
-        <div class="table-responsive">
-          <table class="table" id="empLogsTable">
-            <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>Action</th>
-                <th>Resolved Location</th>
-              </tr>
-            </thead>
-            <tbody id="empLogsBody">
-              <tr>
-                <td colspan="3" class="table-empty">Loading recent telemetry events...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       <!-- Tab Content: My Leaves -->
-      <div id="tabContentLeaves" class="mt-4 hidden">
+      <div id="tabContentLeaves" class="mt-4">
         <div class="table-responsive">
           <table class="table" id="empLeavesTable">
             <thead>
