@@ -123,13 +123,20 @@
         </div>
       </div>
 
-      <!-- Real-time Location Indicator with Radar Pulse -->
+      <!-- Real-time Location Indicator with Radar Pulse & Live Diagnostics -->
       <div class="location-status-banner" id="locationStatusBanner">
         <div class="location-indicator-container">
-          <div class="location-indicator-pulse"></div>
-          <div class="location-indicator-dot"></div>
+          <div class="location-indicator-pulse" id="locationIndicatorPulse"></div>
+          <div class="location-indicator-dot" id="locationIndicatorDot"></div>
         </div>
-        <span id="locationStatusText">Ready to acquire GPS coordinates via device sensor.</span>
+        <div class="location-status-content">
+          <span id="locationStatusText">Checking location status...</span>
+          <span id="locationCoordsText" class="location-coords-text hidden"></span>
+        </div>
+        <button type="button" id="btnRefreshLocation" class="btn-location-refresh" onclick="initLocationStatus(true)" title="Test and refresh location telemetry">
+          <span class="refresh-icon">🔄</span>
+          <span>Test GPS</span>
+        </button>
       </div>
     </section>
 

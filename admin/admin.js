@@ -16,6 +16,7 @@ let CACHED_MONTHLY = [];
 let CACHED_LEAVES = [];
 let CACHED_DEVICES = [];
 let CACHED_STAFF = [];
+let CACHED_ADMIN_LOCATION = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   CURRENT_ADMIN = requireSession("Admin", "../index.html");
@@ -859,6 +860,9 @@ function toggleAdminAttendancePanel() {
   const panel = document.getElementById("adminAttendancePanel");
   if (!panel) return;
   panel.classList.toggle("hidden");
+  if (!panel.classList.contains("hidden")) {
+    initAdminLocationStatus();
+  }
 }
 
 function updateAdminTactileButtonStates() {
@@ -989,7 +993,13 @@ async function handleAdminSelfClock(action) {
   showLoader(true, `Capturing Admin GPS coordinates for ${action}...`);
 
   try {
-    const coords = await getBrowserCoordinates();
+    let coords = null;
+    if (CACHED_ADMIN_LOCATION && (Date.now() - CACHED_ADMIN_LOCATION.timestamp < 90000)) {
+      coords = CACHED_ADMIN_LOCATION;
+    } else {
+      coords = await getBrowserCoordinates({ allowIpFallback: true });
+      CACHED_ADMIN_LOCATION = { ...coords, timestamp: Date.now() };
+    }
 
     showLoader(true, `Transmitting Admin ${action} to MolāDira database...`);
 
@@ -1013,6 +1023,72 @@ async function handleAdminSelfClock(action) {
   } catch (err) {
     showLoader(false);
     showToast(err.message || "Failed to log admin attendance.", "danger", "GPS Error");
+  }
+}
+
+/**
+ * Proactively verifies Admin location telemetry and displays live status in panel.
+ */
+async function initAdminLocationStatus(isManual = false) {
+  const banner = document.getElementById("adminLocationStatusText");
+  const coordsEl = document.getElementById("adminLocationCoordsText");
+  const dot = document.getElementById("adminLocationDot");
+  const pulse = document.getElementById("adminLocationPulse");
+  const refreshBtn = document.getElementById("btnRefreshAdminLocation");
+
+  if (!banner) return;
+
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.classList.add("spinning");
+  }
+
+  if (dot) dot.className = "location-indicator-dot dot-loading";
+  if (pulse) pulse.className = "location-indicator-pulse pulse-loading";
+  banner.innerHTML = "Acquiring Admin location telemetry...";
+  if (coordsEl) coordsEl.classList.add("hidden");
+
+  try {
+    const coords = await getBrowserCoordinates({ allowIpFallback: true });
+    CACHED_ADMIN_LOCATION = { ...coords, timestamp: Date.now() };
+
+    const isIp = coords.isFallback;
+    if (dot) dot.className = `location-indicator-dot ${isIp ? 'dot-warning' : 'dot-success'}`;
+    if (pulse) pulse.className = `location-indicator-pulse ${isIp ? 'pulse-warning' : 'pulse-success'}`;
+
+    const sourceName = coords.source || (isIp ? "IP Network Geolocation" : "High-Accuracy GPS");
+    const acc = coords.accuracy ? ` (±${coords.accuracy}m)` : "";
+    banner.innerHTML = `<strong>Location Ready:</strong> ${escapeHtml(sourceName)}${acc}`;
+
+    if (coordsEl) {
+      coordsEl.classList.remove("hidden");
+      const placeHint = coords.locationHint ? ` • ${escapeHtml(coords.locationHint)}` : "";
+      coordsEl.innerText = `${coords.lat}, ${coords.lon}${placeHint}`;
+    }
+
+    if (isManual) {
+      showToast(`Admin location verified via ${sourceName}!`, "success", "GPS Signal Active");
+    }
+    return coords;
+  } catch (err) {
+    if (dot) dot.className = "location-indicator-dot dot-danger";
+    if (pulse) pulse.className = "location-indicator-pulse pulse-danger";
+
+    banner.innerHTML = `<strong>Location Warning:</strong> ${escapeHtml(err.message || "Could not detect location.")}`;
+    if (coordsEl) {
+      coordsEl.classList.remove("hidden");
+      coordsEl.innerText = "Click to allow location permission in your browser or enable device GPS.";
+    }
+
+    if (isManual) {
+      showToast(err.message || "Failed to acquire admin location telemetry.", "danger", "Location Error");
+    }
+    return null;
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.classList.remove("spinning");
+    }
   }
 }
 

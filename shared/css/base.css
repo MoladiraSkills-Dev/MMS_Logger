@@ -1302,3 +1302,146 @@ textarea.form-control {
 .mb-4 { margin-bottom: 1rem; }
 .mb-6 { margin-bottom: 1.5rem; }
 .pt-4 { padding-top: 1rem; }
+
+/* ==========================================================================
+   SHARED LOCATION STATUS BANNER & DIAGNOSTICS
+   ========================================================================== */
+.location-status-banner {
+  background: #080d1a;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+  font-size: 0.835rem;
+  color: var(--text-muted);
+  transition: border-color var(--transition-normal);
+}
+
+.location-status-banner:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.location-indicator-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.location-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 10px var(--color-success);
+  position: relative;
+  z-index: 1;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.location-indicator-pulse {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.4);
+  animation: radarPulse 2s ease-out infinite;
+  transition: background-color 0.3s ease;
+}
+
+.location-indicator-dot.dot-success {
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+.location-indicator-pulse.pulse-success {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+.location-indicator-dot.dot-warning {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+}
+.location-indicator-pulse.pulse-warning {
+  background: rgba(245, 158, 11, 0.4);
+}
+
+.location-indicator-dot.dot-danger {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+.location-indicator-pulse.pulse-danger {
+  background: rgba(239, 68, 68, 0.3);
+  animation: none;
+}
+
+.location-indicator-dot.dot-loading {
+  background: #3b82f6;
+  box-shadow: 0 0 10px #3b82f6;
+}
+.location-indicator-pulse.pulse-loading {
+  background: rgba(59, 130, 246, 0.4);
+  animation: radarPulse 1s ease-out infinite;
+}
+
+.location-status-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+.location-coords-text {
+  font-size: 0.735rem;
+  color: var(--text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.btn-location-refresh {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.btn-location-refresh:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.btn-location-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-location-refresh.spinning .refresh-icon {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes radarPulse {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}

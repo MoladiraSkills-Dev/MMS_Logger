@@ -446,46 +446,169 @@ function showConfirmModal({
 }
 
 /* ==========================================================================
-   GEOLOCATION CAPTURE HELPER
+   GEOLOCATION CAPTURE & RESILIENT TELEMETRY ENGINE
    ========================================================================== */
 
-function getBrowserCoordinates() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation is not supported by your browser. Please enable GPS permissions."));
-      return;
+/**
+ * Checks permission status for Geolocation if supported by browser.
+ * Returns: "granted" | "prompt" | "denied" | "unsupported"
+ */
+async function checkGeolocationPermission() {
+  if (!navigator || !navigator.geolocation) {
+    return "unsupported";
+  }
+  if (!navigator.permissions || !navigator.permissions.query) {
+    return "prompt";
+  }
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state; // "granted", "prompt", or "denied"
+  } catch (e) {
+    return "prompt";
+  }
+}
+
+/**
+ * IP-based fallback geolocation query.
+ * Fast, reliable fallback for desktops, laptops without GPS, or when GPS times out.
+ */
+async function fetchIpGeolocation() {
+  // Primary IP fallback: ipwho.is
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch("https://ipwho.is/", { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && data.latitude && data.longitude) {
+        const city = data.city || "";
+        const region = data.region || "";
+        const country = data.country || "";
+        const placeDesc = [city, region, country].filter(Boolean).join(", ");
+        return {
+          lat: Number(data.latitude).toFixed(6),
+          lon: Number(data.longitude).toFixed(6),
+          accuracy: 5000,
+          source: "IP Network Geolocation",
+          isFallback: true,
+          locationHint: placeDesc
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("[MMS Geolocation] ipwho.is fallback unreachable, trying secondary fallback:", e.message || e);
+  }
+
+  // Secondary IP fallback: freeipapi.com
+  try {
+    const controller2 = new AbortController();
+    const timer2 = setTimeout(() => controller2.abort(), 6000);
+    const res2 = await fetch("https://freeipapi.com/api/json", { signal: controller2.signal });
+    clearTimeout(timer2);
+
+    if (res2.ok) {
+      const data2 = await res2.json();
+      if (data2 && data2.latitude && data2.longitude) {
+        const city = data2.cityName || "";
+        const region = data2.regionName || "";
+        const country = data2.countryName || "";
+        const placeDesc = [city, region, country].filter(Boolean).join(", ");
+        return {
+          lat: Number(data2.latitude).toFixed(6),
+          lon: Number(data2.longitude).toFixed(6),
+          accuracy: 5000,
+          source: "IP Network Geolocation",
+          isFallback: true,
+          locationHint: placeDesc
+        };
+      }
+    }
+  } catch (e2) {
+    console.warn("[MMS Geolocation] Secondary IP fallback unreachable:", e2.message || e2);
+  }
+
+  return null;
+}
+
+/**
+ * Resilient multi-tier coordinate acquisition:
+ * Tier 1: High Accuracy GPS (7000ms timeout)
+ * Tier 2: Low Accuracy / Network OS Geolocation (6000ms timeout, 5-minute cache)
+ * Tier 3: IP Geolocation Fallback (for desktops, office LANs, or disabled GPS)
+ */
+async function getBrowserCoordinates(options = {}) {
+  const allowIpFallback = options.allowIpFallback !== false;
+
+  const queryGeo = (geoOptions) => {
+    return new Promise((resolve, reject) => {
+      if (!navigator || !navigator.geolocation) {
+        reject(new Error("Geolocation is not supported by your browser. Please enable GPS permissions."));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude.toFixed(6),
+            lon: position.coords.longitude.toFixed(6),
+            accuracy: position.coords.accuracy ? Math.round(position.coords.accuracy) : null,
+            source: geoOptions.enableHighAccuracy ? "High-Accuracy GPS" : "Network / Wi-Fi Fix",
+            isFallback: false,
+            locationHint: ""
+          });
+        },
+        (error) => reject(error),
+        geoOptions
+      );
+    });
+  };
+
+  // Tier 1: Try High-Accuracy Hardware GPS
+  try {
+    const coords = await queryGeo({
+      enableHighAccuracy: true,
+      timeout: 7000,
+      maximumAge: 30000
+    });
+    return coords;
+  } catch (errTier1) {
+    console.warn("[MMS Geolocation] Tier 1 (High Accuracy GPS) failed:", errTier1.message || errTier1.code);
+
+    // Tier 2: Try Low-Accuracy Network/Wi-Fi Fix (if not explicitly PERMISSION_DENIED)
+    if (navigator && navigator.geolocation && errTier1.code !== 1) {
+      try {
+        const coords = await queryGeo({
+          enableHighAccuracy: false,
+          timeout: 6000,
+          maximumAge: 300000
+        });
+        return coords;
+      } catch (errTier2) {
+        console.warn("[MMS Geolocation] Tier 2 (Standard Network Fix) failed:", errTier2.message || errTier2.code);
+      }
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          lat: position.coords.latitude.toFixed(6),
-          lon: position.coords.longitude.toFixed(6),
-          accuracy: position.coords.accuracy ? Math.round(position.coords.accuracy) : null
-        });
-      },
-      (error) => {
-        let msg = "Could not acquire GPS coordinates.";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            msg = "Location permission denied. Please allow location access in your browser / device settings to log shift attendance.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            msg = "GPS signal is currently unavailable on this device. Please check device location settings.";
-            break;
-          case error.TIMEOUT:
-            msg = "GPS location request timed out. Please verify device sensor has an unobstructed signal and retry.";
-            break;
-        }
-        reject(new Error(msg));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 16000,
-        maximumAge: 0
+    // Tier 3: IP-Based Geolocation Fallback
+    if (allowIpFallback) {
+      console.info("[MMS Geolocation] Initiating Tier 3 IP Geolocation fallback...");
+      const ipCoords = await fetchIpGeolocation();
+      if (ipCoords) {
+        return ipCoords;
       }
-    );
-  });
+    }
+
+    // Build specific user-facing error message
+    let msg = "Could not acquire location coordinates.";
+    if (errTier1.code === 1) {
+      msg = "Location permission denied. Please allow location access in your browser / device settings.";
+    } else if (errTier1.code === 2) {
+      msg = "GPS signal is currently unavailable on this device. Please check location settings.";
+    } else if (errTier1.code === 3) {
+      msg = "GPS location request timed out. Please verify device sensor has an unobstructed signal and retry.";
+    }
+    throw new Error(msg);
+  }
 }
 
 /* ==========================================================================

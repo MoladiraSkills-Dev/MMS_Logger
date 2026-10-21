@@ -76,6 +76,22 @@
           <span class="btn-tactile-status" id="adminClockOutStatusBadge">Clock-In Required</span>
         </button>
       </div>
+
+      <!-- Real-time Admin Location Indicator with Live Diagnostics -->
+      <div class="location-status-banner mt-4" id="adminLocationStatusBanner">
+        <div class="location-indicator-container">
+          <div class="location-indicator-pulse" id="adminLocationPulse"></div>
+          <div class="location-indicator-dot" id="adminLocationDot"></div>
+        </div>
+        <div class="location-status-content">
+          <span id="adminLocationStatusText">Ready to acquire Admin location telemetry.</span>
+          <span id="adminLocationCoordsText" class="location-coords-text hidden"></span>
+        </div>
+        <button type="button" id="btnRefreshAdminLocation" class="btn-location-refresh" onclick="initAdminLocationStatus(true)" title="Test and refresh location telemetry">
+          <span class="refresh-icon">🔄</span>
+          <span>Test GPS</span>
+        </button>
+      </div>
     </section>
 
     <!-- Top KPI Stat Counters Grid -->
