@@ -311,8 +311,13 @@ async function handleClockAction(action) {
       CACHED_EMPLOYEE_LOCATION = { ...coords, timestamp: Date.now() };
     }
     
-    // 2. Transmit to backend with LocationIQ reverse geocoding
-    showLoader(true, `Transmitting ${action} telemetry & resolving address...`);
+    // 2. Transmit to backend with verified physical location
+    showLoader(true, `Resolving physical location & recording ${action}...`);
+
+    let resolvedLoc = "";
+    try {
+      resolvedLoc = await reverseGeocodeCoordinates(coords.lat, coords.lon);
+    } catch (e) {}
 
     const res = await callApi("processActivityLog", {
       email: user.email,
@@ -320,7 +325,8 @@ async function handleClockAction(action) {
       lastName: user.lastName,
       action: action,
       lat: coords.lat,
-      lon: coords.lon
+      lon: coords.lon,
+      resolvedLocation: resolvedLoc
     });
 
     showLoader(false);

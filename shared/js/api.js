@@ -652,3 +652,99 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", () => {
   showToast("You are currently offline. Cloud sync will pause until connection returns.", "warning", "Connection Lost");
 });
+
+/* ==========================================================================
+   CLIENT-SIDE REVERSE GEOCODING ENGINE
+   Fast, browser-native reverse geocoding with multi-tier redundancy and caching.
+   Bypasses server IP blocks and Cloudflare bot challenges.
+   ========================================================================== */
+
+const CLIENT_GEO_CACHE = {};
+
+/**
+ * Resolves a street address for latitude and longitude coordinates with automatic multi-tier fallback.
+ * Uses sessionStorage and memory caching to prevent redundant API queries.
+ */
+async function reverseGeocodeCoordinates(lat, lon) {
+  if (!lat || !lon) return "";
+  const numLat = parseFloat(lat);
+  const numLon = parseFloat(lon);
+  if (isNaN(numLat) || isNaN(numLon) || (numLat === 0 && numLon === 0)) {
+    return "";
+  }
+
+  const cacheKey = `${numLat.toFixed(5)},${numLon.toFixed(5)}`;
+  if (CLIENT_GEO_CACHE[cacheKey]) {
+    return CLIENT_GEO_CACHE[cacheKey];
+  }
+
+  try {
+    const stored = sessionStorage.getItem(`mms_geo_${cacheKey}`);
+    if (stored) {
+      CLIENT_GEO_CACHE[cacheKey] = stored;
+      return stored;
+    }
+  } catch (e) {}
+
+  const setCached = (addr) => {
+    if (addr && !addr.includes("Unreachable") && !addr.startsWith("GPS Coordinates (")) {
+      CLIENT_GEO_CACHE[cacheKey] = addr;
+      try {
+        sessionStorage.setItem(`mms_geo_${cacheKey}`, addr);
+      } catch (e) {}
+    }
+    return addr;
+  };
+
+  // Tier 1: LocationIQ
+  try {
+    const key = "pk.1be07ee2080691339d8fc4f1712dbc95";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4500);
+    const res = await fetch(`https://us1.locationiq.com/v1/reverse?key=${key}&lat=${numLat}&lon=${numLon}&format=json`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.display_name) {
+        return setCached(data.display_name);
+      }
+    }
+  } catch (e1) {}
+
+  // Tier 2: BigDataCloud Reverse Geocode (free, high-speed, keyless, zero CORS issues)
+  try {
+    const controller2 = new AbortController();
+    const timer2 = setTimeout(() => controller2.abort(), 4500);
+    const res2 = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${numLat}&longitude=${numLon}&localityLanguage=en`, { signal: controller2.signal });
+    clearTimeout(timer2);
+    if (res2.ok) {
+      const data2 = await res2.json();
+      if (data2) {
+        const parts = [
+          data2.locality || data2.city,
+          data2.principalSubdivision,
+          data2.countryName
+        ].filter(Boolean);
+        if (parts.length > 0) {
+          return setCached(parts.join(", "));
+        }
+      }
+    }
+  } catch (e2) {}
+
+  // Tier 3: OpenStreetMap Nominatim
+  try {
+    const controller3 = new AbortController();
+    const timer3 = setTimeout(() => controller3.abort(), 4500);
+    const res3 = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${numLat}&lon=${numLon}&format=json`, { signal: controller3.signal });
+    clearTimeout(timer3);
+    if (res3.ok) {
+      const data3 = await res3.json();
+      if (data3 && data3.display_name) {
+        return setCached(data3.display_name);
+      }
+    }
+  } catch (e3) {}
+
+  return "";
+}

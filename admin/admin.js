@@ -346,12 +346,50 @@ function renderLogsTable(logs) {
         </td>
         <td class="text-sm">
           ${(() => {
-            const loc = l.location || "";
-            const isError = loc.includes("Unreachable") || loc.includes("Limits Exceeded") || loc.includes("Unknown/Unresolved");
-            if (isError) {
-              return `<div class="text-warning text-xs font-semibold">⚠️ Address lookup rate-limited</div>`;
+            const loc = String(l.location || "");
+            const hasCoords = (Number(l.lat) !== 0 || Number(l.lon) !== 0);
+            const isUnresolved = !loc || 
+              loc.includes("Unreachable") || 
+              loc.includes("Limits Exceeded") || 
+              loc.includes("Unknown/Unresolved") ||
+              loc.startsWith("GPS Coordinates (");
+
+            if (!isUnresolved) {
+              return `<div class="font-medium">${escapeHtml(loc)}</div>`;
             }
-            return `<div>${escapeHtml(loc || "Location not resolved")}</div>`;
+
+            if (hasCoords) {
+              const numLat = parseFloat(l.lat);
+              const numLon = parseFloat(l.lon);
+              const cacheKey = `${numLat.toFixed(5)},${numLon.toFixed(5)}`;
+              const cached = (typeof CLIENT_GEO_CACHE !== 'undefined' && CLIENT_GEO_CACHE[cacheKey]) 
+                || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(`mms_geo_${cacheKey}`));
+
+              if (cached) {
+                l.location = cached;
+                return `<div class="font-medium text-white">${escapeHtml(cached)}</div>`;
+              }
+
+              const cellId = `log-loc-${escapeHtml(l.id)}`;
+              setTimeout(async () => {
+                try {
+                  const actual = await reverseGeocodeCoordinates(l.lat, l.lon);
+                  if (actual) {
+                    l.location = actual;
+                    const cell = document.getElementById(cellId);
+                    if (cell) {
+                      cell.className = "font-medium text-white";
+                      cell.textContent = actual;
+                    }
+                    queueSheetLocationSync(l.id, actual);
+                  }
+                } catch (e) {}
+              }, 40);
+
+              return `<div id="${cellId}" class="text-xs font-semibold text-warning">Resolving address...</div>`;
+            }
+
+            return `<div class="text-xs text-dim">${escapeHtml(loc || "System Auto-Logout")}</div>`;
           })()}
           <div class="text-xs text-dim font-mono flex items-center gap-1 mt-0.5">
             <span>GPS: ${escapeHtml(l.lat)}, ${escapeHtml(l.lon)}</span>
@@ -370,29 +408,77 @@ function renderLogsTable(logs) {
   }).join("");
 }
 
+let PENDING_LOCATION_UPDATES = [];
+let LOCATION_SYNC_TIMER = null;
+
+function queueSheetLocationSync(logId, actualAddress) {
+  if (!logId || !actualAddress) return;
+  if (!PENDING_LOCATION_UPDATES.some(u => u.logId === logId)) {
+    PENDING_LOCATION_UPDATES.push({ logId, locationName: actualAddress });
+  }
+
+  if (LOCATION_SYNC_TIMER) clearTimeout(LOCATION_SYNC_TIMER);
+  LOCATION_SYNC_TIMER = setTimeout(async () => {
+    if (PENDING_LOCATION_UPDATES.length === 0) return;
+    const batch = [...PENDING_LOCATION_UPDATES];
+    PENDING_LOCATION_UPDATES = [];
+    try {
+      await callApi("batchUpdateLogLocations", { updates: batch });
+    } catch (e) {
+      console.warn("Background location sheet sync:", e);
+    }
+  }, 1200);
+}
+
 /**
- * Scans the database and triggers background re-resolution for un-resolved or rate-limited addresses.
+ * Scans all activity logs, resolves physical street addresses via client-side geocoding, and syncs them to the Google Sheet.
  */
 async function triggerReResolveLocations() {
   const btn = document.getElementById("btnReResolveLocations");
   const originalHtml = btn ? btn.innerHTML : "🔄 Re-resolve Addresses";
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;margin-right:6px;display:inline-block;vertical-align:middle;"></span> Resolving...`;
+    btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;margin-right:6px;display:inline-block;vertical-align:middle;"></span> Resolving Addresses...`;
   }
 
-  showToast("Scanning and resolving physical addresses via multi-tier fallback...", "info", "Address Resolution");
+  showToast("Resolving physical street locations for all logs...", "info", "Address Resolution");
 
   try {
-    const res = await callApi("reResolveUnresolvedLocations");
-    if (res.status === "success") {
-      showToast(res.message || "Address resolution complete!", "success", "Updated Successfully");
-      await loadAdminData();
+    const toResolve = CACHED_LOGS.filter(l => {
+      const hasCoords = (Number(l.lat) !== 0 || Number(l.lon) !== 0);
+      const isUnres = !l.location || 
+        l.location.includes("Unreachable") || 
+        l.location.includes("Limits Exceeded") || 
+        l.location.includes("Unknown/Unresolved") ||
+        l.location.startsWith("GPS Coordinates (");
+      return hasCoords && isUnres;
+    });
+
+    if (toResolve.length === 0) {
+      showToast("All activity log locations are already resolved!", "success", "Addresses Complete");
+      return;
+    }
+
+    const updates = [];
+    for (const log of toResolve) {
+      const actualAddress = await reverseGeocodeCoordinates(log.lat, log.lon);
+      if (actualAddress) {
+        log.location = actualAddress;
+        updates.push({ logId: log.id, locationName: actualAddress });
+      }
+    }
+
+    // Refresh current UI table view with actual names immediately
+    applyLogFilters();
+
+    if (updates.length > 0) {
+      const res = await callApi("batchUpdateLogLocations", { updates });
+      showToast(`Resolved and saved actual locations for ${updates.length} log entries!`, "success", "Locations Updated");
     } else {
-      showToast(res.message || "Failed to re-resolve addresses. Make sure updated Code.gs is deployed in Apps Script.", "danger", "Resolution Error");
+      showToast("Addresses could not be reached via online map providers.", "warning", "Notice");
     }
   } catch (err) {
-    showToast(err.message || "Network error while connecting to Apps Script API.", "danger", "Error");
+    showToast(err.message || "Failed to resolve addresses.", "danger", "Resolution Error");
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -1044,7 +1130,12 @@ async function handleAdminSelfClock(action) {
       CACHED_ADMIN_LOCATION = { ...coords, timestamp: Date.now() };
     }
 
-    showLoader(true, `Transmitting Admin ${action} to MolāDira database...`);
+    showLoader(true, `Resolving physical location & transmitting Admin ${action}...`);
+
+    let resolvedLoc = "";
+    try {
+      resolvedLoc = await reverseGeocodeCoordinates(coords.lat, coords.lon);
+    } catch (e) {}
 
     const res = await callApi("processActivityLog", {
       email: user.email,
@@ -1052,7 +1143,8 @@ async function handleAdminSelfClock(action) {
       lastName: user.lastName,
       action: action,
       lat: coords.lat,
-      lon: coords.lon
+      lon: coords.lon,
+      resolvedLocation: resolvedLoc
     });
 
     showLoader(false);
