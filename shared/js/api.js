@@ -483,6 +483,24 @@ async function fetchIpGeolocation() {
     if (res.ok) {
       const data = await res.json();
       if (data && data.success && data.latitude && data.longitude) {
+        const ip = String(data.ip || "");
+        const isp = String((data.connection && data.connection.isp) || "").toLowerCase();
+        const org = String((data.connection && data.connection.org) || "").toLowerCase();
+
+        // Molādira Skills Office Network Recognition (WIRUlink office Wi-Fi / WAN)
+        // Eliminates generic CBD coordinates for office laptops/desktops without GPS antennas
+        const isOfficeNetwork = ip.startsWith("165.49.20.") || isp.includes("wirulink") || org.includes("wirulink");
+        if (isOfficeNetwork) {
+          return {
+            lat: "-26.129230",
+            lon: "27.910030",
+            accuracy: 25,
+            source: "Molādira Office Wi-Fi Network",
+            isFallback: true,
+            locationHint: "932, Kudu Street, Johannesburg, Gauteng"
+          };
+        }
+
         const city = data.city || "";
         const region = data.region || "";
         const country = data.country || "";
@@ -511,6 +529,18 @@ async function fetchIpGeolocation() {
     if (res2.ok) {
       const data2 = await res2.json();
       if (data2 && data2.latitude && data2.longitude) {
+        const ip2 = String(data2.ipAddress || "");
+        if (ip2.startsWith("165.49.20.")) {
+          return {
+            lat: "-26.129230",
+            lon: "27.910030",
+            accuracy: 25,
+            source: "Molādira Office Wi-Fi Network",
+            isFallback: true,
+            locationHint: "932, Kudu Street, Johannesburg, Gauteng"
+          };
+        }
+
         const city = data2.cityName || "";
         const region = data2.regionName || "";
         const country = data2.countryName || "";
