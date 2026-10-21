@@ -187,6 +187,10 @@
           <input type="text" id="filterLogSearch" class="form-control" placeholder="Search employee name or email..."
             oninput="applyLogFilters()">
         </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="btnReResolveLocations" onclick="triggerReResolveLocations()" title="Scan and resolve missing or rate-limited addresses">
+          🔄 Re-resolve Addresses
+        </button>
       </div>
 
       <div class="table-responsive">

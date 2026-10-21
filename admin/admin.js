@@ -345,8 +345,20 @@ function renderLogsTable(logs) {
           <span class="badge ${badgeClass}">${icon} ${escapeHtml(l.action)}</span>
         </td>
         <td class="text-sm">
-          <div>${escapeHtml(l.location || "Location not resolved")}</div>
-          <div class="text-xs text-dim font-mono">GPS: ${l.lat}, ${l.lon}</div>
+          ${(() => {
+            const loc = l.location || "";
+            const isError = loc.includes("Unreachable") || loc.includes("Limits Exceeded") || loc.includes("Unknown/Unresolved");
+            if (isError) {
+              return `<div class="text-warning text-xs font-semibold">⚠️ Address lookup rate-limited</div>`;
+            }
+            return `<div>${escapeHtml(loc || "Location not resolved")}</div>`;
+          })()}
+          <div class="text-xs text-dim font-mono flex items-center gap-1 mt-0.5">
+            <span>GPS: ${escapeHtml(l.lat)}, ${escapeHtml(l.lon)}</span>
+            ${(Number(l.lat) !== 0 || Number(l.lon) !== 0) 
+              ? `<a href="https://maps.google.com/?q=${encodeURIComponent(l.lat + ',' + l.lon)}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline ml-1 font-sans" title="View location on Google Maps">📍 Map</a>` 
+              : ''}
+          </div>
         </td>
         <td>
           ${l.editedBy 
@@ -356,6 +368,37 @@ function renderLogsTable(logs) {
       </tr>
     `;
   }).join("");
+}
+
+/**
+ * Scans the database and triggers background re-resolution for un-resolved or rate-limited addresses.
+ */
+async function triggerReResolveLocations() {
+  const btn = document.getElementById("btnReResolveLocations");
+  const originalHtml = btn ? btn.innerHTML : "🔄 Re-resolve Addresses";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;margin-right:6px;display:inline-block;vertical-align:middle;"></span> Resolving...`;
+  }
+
+  showToast("Scanning and resolving physical addresses via multi-tier fallback...", "info", "Address Resolution");
+
+  try {
+    const res = await callApi("reResolveUnresolvedLocations");
+    if (res.status === "success") {
+      showToast(res.message || "Address resolution complete!", "success", "Updated Successfully");
+      await loadAdminData();
+    } else {
+      showToast(res.message || "Failed to re-resolve addresses. Make sure updated Code.gs is deployed in Apps Script.", "danger", "Resolution Error");
+    }
+  } catch (err) {
+    showToast(err.message || "Network error while connecting to Apps Script API.", "danger", "Error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
 }
 
 /* ==========================================================================

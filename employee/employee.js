@@ -326,13 +326,18 @@ async function handleClockAction(action) {
     showLoader(false);
 
     if (res.status === "success") {
+      const rawLoc = res.location || "";
+      const cleanLoc = (rawLoc.includes("Unreachable") || rawLoc.includes("Limits Exceeded"))
+        ? `GPS Coordinates (${coords.lat}, ${coords.lon})`
+        : rawLoc;
+
       const banner = document.getElementById("locationStatusText");
-      if (banner && res.location) {
-        banner.innerHTML = `<strong>GPS Locked:</strong> ${escapeHtml(res.location)} (${res.time})`;
+      if (banner && cleanLoc) {
+        banner.innerHTML = `<strong>GPS Locked:</strong> ${escapeHtml(cleanLoc)} (${res.time})`;
       }
 
       showToast(`Successfully recorded ${action} at ${res.time}!`, "success", `${action} Recorded`);
-      showAlert("employeeAlert", `Successfully recorded ${action} at ${res.time}! Physical location: ${res.location}`, "success");
+      showAlert("employeeAlert", `Successfully recorded ${action} at ${res.time}! Physical location: ${cleanLoc}`, "success");
       
       // Refresh dashboard
       loadEmployeeData();
