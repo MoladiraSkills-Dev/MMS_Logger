@@ -487,6 +487,34 @@ async function triggerReResolveLocations() {
   }
 }
 
+/**
+ * Scans all raw activity logs and synchronizes Daily, Weekly, and Monthly shift summaries.
+ */
+async function triggerExtractDailySummaries() {
+  const btn = document.getElementById("btnSyncDailySummaries");
+  const originalHtml = btn ? btn.innerHTML : "🔄 Sync Summaries from Logs";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;margin-right:6px;display:inline-block;vertical-align:middle;"></span> Processing...`;
+  }
+
+  showToast("Scanning all activity logs and synchronizing shift summaries...", "info", "Processing Summaries");
+
+  try {
+    const res = await callApi("extractExistingLogsToDailySummaries");
+    const msg = (typeof res === "string") ? res : (res && res.message ? res.message : "Shift summaries successfully synchronized!");
+    showToast(msg, "success", "Sync Complete");
+    await loadAdminData();
+  } catch (err) {
+    showToast(err.message || "Failed to process summaries.", "danger", "Processing Error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+}
+
 /* ==========================================================================
    TAB 2: DAILY SUMMARIES FILTERING & RENDERING
    ========================================================================== */

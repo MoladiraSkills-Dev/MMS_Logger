@@ -236,6 +236,10 @@
           <input type="text" id="filterDailySearch" class="form-control" placeholder="Search employee..."
             oninput="applyDailyFilters()">
         </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="btnSyncDailySummaries" onclick="triggerExtractDailySummaries()" title="Scan and process all raw activity logs into daily shift summaries">
+          🔄 Sync Summaries from Logs
+        </button>
       </div>
 
       <div class="table-responsive">
