@@ -41,6 +41,10 @@
           onclick="switchAdminTab('loggers')">
           <span>🏢</span> Client Loggers
         </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnAdminDocs"
+          onclick="switchAdminTab('docs')">
+          <span>📖</span> System Docs
+        </button>
         <button type="button" class="btn btn-primary btn-sm" id="btnRefreshData" onclick="loadAdminDashboard(true)">
           <span id="refreshIcon">🔄</span> Refresh
         </button>
@@ -164,6 +168,9 @@
       <button type="button" id="tabBtnLoggers" class="nav-tab-btn" onclick="switchAdminTab('loggers')">
         <span>🏢</span> Client Loggers
         <span id="tabBadgeLoggers" class="tab-badge tab-badge-info">5</span>
+      </button>
+      <button type="button" id="tabBtnDocs" class="nav-tab-btn" onclick="switchAdminTab('docs')">
+        <span>📖</span> System Docs
       </button>
     </nav>
 
@@ -801,6 +808,327 @@
             </button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- TAB 10: SYSTEM DOCUMENTATION & OPERATIONAL MANUAL -->
+    <section id="contentTabDocs" class="card hidden">
+      <div class="docs-header-wrap">
+        <div class="docs-header-title">
+          <div class="docs-icon-badge">📖</div>
+          <div>
+            <h2 class="text-xl font-bold">MolāDira Skills (MMS) <span class="text-gradient">System Documentation</span></h2>
+            <p class="text-xs text-muted">Complete architecture specifications, shift telemetry engine, BCEA compliance formulas, database schema, and API directory.</p>
+          </div>
+        </div>
+        <div class="flex gap-2" style="flex-wrap: wrap;">
+          <a href="../DOCUMENTATION.md" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <span>📄</span> View Full DOCUMENTATION.md
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyApiUrl()">
+            <span>📋</span> Copy API Endpoint
+          </button>
+        </div>
+      </div>
+
+      <!-- Documentation Filter & Navigation Toolbar -->
+      <div class="filter-toolbar mb-4">
+        <div class="docs-nav-pills" id="docsCategoryPills">
+          <button type="button" class="docs-pill active" onclick="filterDocsCategory('ALL', this)">All Sections</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('architecture', this)">Architecture</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('shifts', this)">Shift &amp; Floor Rules</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('failsafes', this)">Failsafes &amp; Integrity</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('schemas', this)">Database Schema</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('api', this)">API Directory</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('resources', this)">Leave &amp; Devices</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('timesheets', this)">Timesheet Exports</button>
+          <button type="button" class="docs-pill" onclick="filterDocsCategory('troubleshooting', this)">Troubleshooting</button>
+        </div>
+        <div class="search-wrapper ml-auto" style="min-width: 260px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchDocsInput" class="form-control" placeholder="Search documentation topics..." oninput="handleSearchDocs(this.value)">
+        </div>
+      </div>
+
+      <!-- Documentation Cards Grid -->
+      <div class="docs-grid" id="docsCardsContainer">
+        
+        <!-- CARD 1: ARCHITECTURE -->
+        <div class="docs-section-card theme-blue" data-category="architecture" data-keywords="architecture decoupled security github pages google apps script sheets cors sha256 salt rbac">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>🏗️</span> Decoupled Serverless Architecture</h3>
+            <span class="badge badge-info">Core Architecture</span>
+          </div>
+          <p class="docs-card-desc">
+            The MMS Logger utilizes a decoupled serverless architecture separating presentation, business logic, and persistence into isolated, secure tiers:
+          </p>
+          <table class="docs-subtable">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Technology</th>
+                <th>Responsibilities</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Frontend</strong></td>
+                <td>HTML5, Vanilla JS, CSS3</td>
+                <td>Hosted on GitHub Pages; static presentation; client session management.</td>
+              </tr>
+              <tr>
+                <td><strong>API Gateway</strong></td>
+                <td>Google Apps Script (<code>Code.gs</code>)</td>
+                <td>Processes all HTTP POST API requests; executes as script owner; server-side secrets.</td>
+              </tr>
+              <tr>
+                <td><strong>Database</strong></td>
+                <td>Google Sheets SSDB</td>
+                <td>8 structured tables storing users, logs, summaries, leave, and device checkouts.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="docs-callout">
+            🔒 <strong>Zero Client Secrets:</strong> LocationIQ API keys, database spreadsheet keys, and salted user password hashes never touch the client browser.
+          </div>
+        </div>
+
+        <!-- CARD 2: SHIFT RULES & SMART FLOOR TIMES -->
+        <div class="docs-section-card" data-category="shifts" data-keywords="shift floor times 08:00 17:00 13:00 rounding 5-minute lunch deduction bcea overtime">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>⏱️</span> Shift Engine &amp; Smart Floor Times</h3>
+            <span class="badge badge-warning">BCEA Compliant</span>
+          </div>
+          <p class="docs-card-desc">
+            Enforces standard working hours while preventing unauthorized overtime and dockings under BCEA South African labor standards:
+          </p>
+          <table class="docs-subtable">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Weekday (Mon - Fri)</th>
+                <th>Saturday</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Shift Span</strong></td>
+                <td>08:00 AM – 17:00 PM</td>
+                <td>08:00 AM – 13:00 PM</td>
+              </tr>
+              <tr>
+                <td><strong>Clock-In Floor</strong></td>
+                <td colspan="2">&le; 08:00 &rarr; 08:00 | &gt; 08:00 &rarr; Rounded to nearest 5m (e.g. 08:07 &rarr; 08:05)</td>
+              </tr>
+              <tr>
+                <td><strong>Clock-Out Floor</strong></td>
+                <td>Bound to 17:00</td>
+                <td>Bound to 13:00</td>
+              </tr>
+              <tr>
+                <td><strong>1h Lunch Deduction</strong></td>
+                <td>Auto-deducted if shift &gt; 5 hours</td>
+                <td>Zero lunch deduction</td>
+              </tr>
+              <tr>
+                <td><strong>Overtime Lock</strong></td>
+                <td colspan="2">Locked to 0 mins on standard shifts; unlocked only via Admin Audit</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="docs-callout">
+            ⚠️ <strong>Admin Audit Overrides:</strong> Manual adjustments set <code>isAdminEdit = true</code>, bypassing standard 17:00 anchors and calculating true overtime.
+          </div>
+        </div>
+
+        <!-- CARD 3: DEFENSIVE AUTO-FAILSAFES -->
+        <div class="docs-section-card theme-orange" data-category="failsafes" data-keywords="failsafe auto-close abandoned shifts clock-out guard missing clock-in">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>🛡️</span> Defensive Auto-Failsafes</h3>
+            <span class="badge badge-danger">Integrity Engine</span>
+          </div>
+          <p class="docs-card-desc">
+            Autonomous server-side routines maintain database cleanliness without requiring manual supervisor intervention:
+          </p>
+          <ul class="text-xs space-y-2 text-muted" style="line-height: 1.6; list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.85rem;">
+            <li><strong>Failsafe 1 - Abandoned Shift Auto-Closure (<code>autoClosePreviousShifts</code>):</strong> When an employee clocks in, any previous open shift (<em>In Progress</em>) is automatically terminated at standard closing time (17:00 / 13:00) with location <code>"System Auto-Logout Failsafe"</code>.</li>
+            <li><strong>Failsafe 2 - Clock-Out Guard:</strong> Employees cannot clock out in the afternoon unless a valid morning clock-in was recorded for that date. Rogue clock-outs are blocked.</li>
+            <li><strong>Failsafe 3 - Single Action Guard:</strong> Prevents duplicate clock-ins or duplicate clock-outs on the same date.</li>
+          </ul>
+          <div class="docs-callout warning">
+            🚨 <strong>Data Integrity:</strong> Ensures weekly and monthly summaries never calculate multi-day runaway shifts if a device loses battery.
+          </div>
+        </div>
+
+        <!-- CARD 4: GEOLOCATION & REVERSE GEOCODING -->
+        <div class="docs-section-card theme-emerald" data-category="architecture" data-keywords="gps geolocation telemetry locationiq openstreetmap nominatim bigdatacloud reverse geocode">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>📍</span> 4-Tier Geolocation Telemetry</h3>
+            <span class="badge badge-success">GPS Verification</span>
+          </div>
+          <p class="docs-card-desc">
+            Every attendance action acquires high-accuracy device coordinates and resolves physical street addresses through a multi-tier fallback pipeline:
+          </p>
+          <table class="docs-subtable">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Provider / Engine</th>
+                <th>Resolution Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Tier 1</strong></td>
+                <td>LocationIQ API</td>
+                <td>High-precision street, suburb, and postal address.</td>
+              </tr>
+              <tr>
+                <td><strong>Tier 2</strong></td>
+                <td>OpenStreetMap Nominatim</td>
+                <td>Secondary reverse geocode with corporate User-Agent.</td>
+              </tr>
+              <tr>
+                <td><strong>Tier 3</strong></td>
+                <td>BigDataCloud Client</td>
+                <td>Keyless tertiary locality, city, and province fallback.</td>
+              </tr>
+              <tr>
+                <td><strong>Tier 4</strong></td>
+                <td>Coordinate String</td>
+                <td>Clean <code>GPS Coordinates (lat, lon)</code> representation.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="docs-callout">
+            🔄 <strong>Re-Resolve Addresses:</strong> Administrators can click <em>"Re-resolve Addresses"</em> on the Activity Logs tab to back-fill any rate-limited entries.
+          </div>
+        </div>
+
+        <!-- CARD 5: DATABASE SCHEMA -->
+        <div class="docs-section-card" data-category="schemas" data-keywords="database schema google sheets users activity_logs daily_summaries weekly_summaries monthly_summaries leave_requests device_requests admin_settings">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>🗄️</span> Database Schemas (8 Core Tables)</h3>
+            <span class="badge badge-info">Google Sheets SSDB</span>
+          </div>
+          <p class="docs-card-desc">
+            All persistent data is stored across 8 structured tables created and styled automatically via <code>setupDatabase()</code>:
+          </p>
+          <ul class="text-xs space-y-2 text-muted" style="line-height: 1.6; list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.85rem;">
+            <li><code>Users</code>: Email, Name, Salt, SHA-256 Hash, Role (Employee/Admin), Status (Verified/Blocked).</li>
+            <li><code>Activity_Logs</code>: Immutable telemetry trail with Log ID, GPS coordinates, timestamp, and address.</li>
+            <li><code>Daily_Summaries</code>: Matched shift records with raw times, floor times, net duration, and status.</li>
+            <li><code>Weekly_Summaries</code>: ISO-8601 week aggregates (YYYY-Www) with compliance totals (&le; 45h).</li>
+            <li><code>Monthly_Summaries</code>: Calendar month (YYYY-MM) compensation and billing aggregates.</li>
+            <li><code>Leave_Requests</code>: Leave applications (SL, AL, FL, Special) and approval tracking.</li>
+            <li><code>Device_Requests</code>: Hardware checkouts, serial numbers, expected returns, and release status.</li>
+            <li><code>Admin_Settings</code>: Administrator authorization registry and role definitions.</li>
+          </ul>
+          <div class="docs-callout">
+            ⚡ <strong>Setup Engine:</strong> Run <code>setupDatabase()</code> in Google Apps Script to instantly scaffold the entire database architecture.
+          </div>
+        </div>
+
+        <!-- CARD 6: API GATEWAY DIRECTORY -->
+        <div class="docs-section-card theme-blue" data-category="api" data-keywords="api gateway dopost doget registeruser loginuser processactivitylog getemployeeportaldata getadmindashboarddata exporttimesheetdata generatetimesheetszip">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>🔌</span> API Gateway Directory (19 Methods)</h3>
+            <span class="badge badge-info">JSON RPC Gateway</span>
+          </div>
+          <p class="docs-card-desc">
+            All client-server communication dispatches through <code>doPost</code> using standardized method dispatch:
+          </p>
+          <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.85rem;">
+            <div><code class="docs-code-tag">registerUser</code>: Onboard employee with salt &amp; SHA-256.</div>
+            <div><code class="docs-code-tag">loginUser</code>: Validate credentials and return role.</div>
+            <div><code class="docs-code-tag">processActivityLog</code>: Record GPS clock-in / clock-out.</div>
+            <div><code class="docs-code-tag">getEmployeePortalData</code>: Fetch personal shift state &amp; history.</div>
+            <div><code class="docs-code-tag">getAdminDashboardData</code>: Complete operations hub dataset.</div>
+            <div><code class="docs-code-tag">adminUpdateDailySummary</code>: Audit override of shift hours.</div>
+            <div><code class="docs-code-tag">submitLeaveRequest</code> / <code class="docs-code-tag">adminUpdateLeaveStatus</code>: Leave workflow.</div>
+            <div><code class="docs-code-tag">submitDeviceRequest</code> / <code class="docs-code-tag">adminUpdateDeviceStatus</code>: Hardware workflow.</div>
+            <div><code class="docs-code-tag">exportTimesheetData</code>: PDF or CSV timesheet compiler.</div>
+            <div><code class="docs-code-tag">generateTimesheetsZip</code>: Batch multi-employee ZIP archive.</div>
+          </div>
+          <div class="docs-callout">
+            📡 <strong>Transport Resiliency:</strong> Handled by <code>shared/js/api.js</code> with credentials omitted to prevent Google account redirect loops.
+          </div>
+        </div>
+
+        <!-- CARD 7: RESOURCE WORKFLOWS -->
+        <div class="docs-section-card" data-category="resources" data-keywords="leave device checkout hardware laptop router scanner sick leave annual leave">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>🌴</span> Leave &amp; Hardware Checkouts</h3>
+            <span class="badge badge-warning">Resource Hub</span>
+          </div>
+          <p class="docs-card-desc">
+            Integrated self-service workflows streamline staff absence applications and hardware fleet tracking:
+          </p>
+          <table class="docs-subtable">
+            <thead>
+              <tr>
+                <th>Resource Module</th>
+                <th>Categories / Equipment</th>
+                <th>Workflow States</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Leave Management</strong></td>
+                <td>Sick Leave (SL), Annual Leave (AL), Family Responsibility (FL), Special Leave.</td>
+                <td><code>Pending</code> &rarr; <code>Approved</code> / <code>Rejected</code>.</td>
+              </tr>
+              <tr>
+                <td><strong>Device Checkout</strong></td>
+                <td>Laptops, Tablets, 4G/LTE Routers, RFID/Barcode Scanners, Specialized Kits.</td>
+                <td><code>Pending</code> &rarr; <code>Approved</code> &rarr; <code>Returned</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="docs-callout">
+            📦 <strong>Fleet Inventory:</strong> Asset tag, serial number, and project justification ensure full accountability for corporate equipment.
+          </div>
+        </div>
+
+        <!-- CARD 8: STATUTORY TIMESHEETS & EXPORTS -->
+        <div class="docs-section-card theme-emerald" data-category="timesheets" data-keywords="timesheet export pdf csv batch zip bcea signature compliance sign-off">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>📑</span> BCEA Compliance Timesheets</h3>
+            <span class="badge badge-success">Audit Ready</span>
+          </div>
+          <p class="docs-card-desc">
+            Generates legally verifiable timesheets for Department of Employment and Labour inspections:
+          </p>
+          <ul class="text-xs space-y-2 text-muted" style="line-height: 1.6; list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.85rem;">
+            <li><strong>Official PDF Timesheet:</strong> Includes corporate letterhead, BBBEE Level 1 badge, shift breakdowns, ordinary hours, overtime, and mandatory Employee + Supervisor signature lines.</li>
+            <li><strong>Raw CSV Export:</strong> Structured data export for direct import into corporate payroll systems (e.g. Sage, Pastel, SimplePay).</li>
+            <li><strong>Batch ZIP Archiving:</strong> Compiles and packages individual PDF timesheets for every active contractor in one click.</li>
+          </ul>
+          <div class="docs-callout">
+            ✍️ <strong>Legal Sign-Off:</strong> Preserves physical and digital accountability with dedicated verification spaces.
+          </div>
+        </div>
+
+        <!-- CARD 9: TROUBLESHOOTING & MAINTENANCE -->
+        <div class="docs-section-card theme-orange" data-category="troubleshooting" data-keywords="troubleshooting diagnostics gps permission denied cors 302 empty payload setupdatabase">
+          <div class="docs-card-header">
+            <h3 class="docs-card-title"><span>❓</span> Troubleshooting &amp; Diagnostics</h3>
+            <span class="badge badge-danger">SOP &amp; Maintenance</span>
+          </div>
+          <p class="docs-card-desc">
+            Standard operating procedures for rapid diagnostic resolution of common environmental errors:
+          </p>
+          <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.85rem;">
+            <div class="mb-2"><strong>GPS Denied:</strong> Instruct user to click padlock icon in browser address bar and set Location to "Allow". Click "Test GPS" to verify.</div>
+            <div class="mb-2"><strong>API Downgrade / 302:</strong> Ensure Web App deployment is set to <em>"Execute as: Me"</em> and <em>"Access: Anyone"</em>.</div>
+            <div class="mb-2"><strong>Missing Sheets:</strong> In Google Sheets, run <strong>⚡ MMS Logger Tools &rarr; Setup / Repair Database Tables</strong>.</div>
+            <div><strong>Historical Shifts Unsynced:</strong> Click <strong>"Sync Summaries from Logs"</strong> on the Daily Shifts tab.</div>
+          </div>
+          <div class="docs-callout">
+            🛠️ <strong>Maintenance Menu:</strong> The Google Sheet custom menu provides 1-click tools for re-resolving addresses and resetting floor times.
+          </div>
+        </div>
+
       </div>
     </section>
 

@@ -434,3 +434,13 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+function openEmployeeHelpModal() {
+  const modal = document.getElementById("employeeHelpModal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closeEmployeeHelpModal() {
+  const modal = document.getElementById("employeeHelpModal");
+  if (modal) modal.classList.add("hidden");
+}

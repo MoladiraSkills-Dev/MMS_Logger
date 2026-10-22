@@ -2,6 +2,8 @@
 
 **MolāDira Skills (MMS)** Geolocation Attendance, Shift Telemetry, Leave Management, and Device Checkout System.
 
+> 📖 **Comprehensive System Documentation:** For complete architectural specifications, 19-method API gateway directory, shift rounding formulas, database schemas, and BCEA compliance logic, consult [**`DOCUMENTATION.md`**](./DOCUMENTATION.md).
+
 ---
 
 ## 🏗️ Architecture & Security Model
@@ -19,6 +21,7 @@ This system implements a decoupled architecture for maximum security:
 
 ```plaintext
 MMS_Logger/
+├── DOCUMENTATION.md             # Master Architecture, Telemetry & Operations Manual
 ├── index.html                   # Authentication Portal (Sign In & Registration)
 ├── auth/
 │   └── auth.js                  # Authentication logic & role-based routing
@@ -29,14 +32,14 @@ MMS_Logger/
 │       ├── api.js               # Decoupled API Client & Session Helpers
 │       └── leave_device.js      # Shared Leave Application & Device Checkout Modals
 ├── employee/
-│   ├── index.html               # Employee Portal
+│   ├── index.html               # Employee Portal (with Live Shift Timeline & Guide)
 │   ├── employee.css             # Employee Portal Styling
 │   └── employee.js              # Clock In/Out GPS Telemetry & Shift Tracking
 ├── admin/
-│   ├── index.html               # Admin Operations Dashboard
+│   ├── index.html               # Admin Operations Hub (with System Docs & Gateways)
 │   ├── admin.css                # Admin Dashboard Styling
 │   └── admin.js                 # Shift Auditing, Leave/Device Approvals, Exports
-├── Code.gs                      # Complete Google Apps Script Backend
+├── Code.gs                      # Complete Google Apps Script Backend (with ⚡ Menu)
 └── .github/
     └── workflows/
         └── static.yml           # Automated GitHub Pages Deployment

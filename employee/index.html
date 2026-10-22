@@ -28,11 +28,14 @@
           <p class="text-sm font-bold text-main" id="userDisplayName">Loading Employee...</p>
           <span class="badge badge-gradient" id="userRoleBadge">Employee</span>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnEmployeeLogout" onclick="logout()" title="Sign out of portal">
-          <span>🚪</span> Sign Out
-        </button>
-      </div>
-    </header>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnEmployeeHelp" onclick="openEmployeeHelpModal()" title="View Employee Attendance & Shift Guide">
+            <span>📖</span> Guide
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnEmployeeLogout" onclick="logout()" title="Sign out of portal">
+            <span>🚪</span> Sign Out
+          </button>
+        </div>
+      </header>
 
     <!-- Global Feedback Alert Container -->
     <div id="employeeAlert" class="alert hidden" role="alert"></div>
@@ -299,9 +302,61 @@
     </div>
   </div>
 
+  <!-- MODAL: EMPLOYEE ATTENDANCE & SHIFT GUIDE -->
+  <div id="employeeHelpModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.6rem;">📖</span>
+          <div>
+            <h3 class="modal-title" id="helpModalTitle">Employee Shift &amp; Resource Guide</h3>
+            <p class="text-xs text-muted">Attendance policies, shift floor times, leave &amp; devices</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="closeEmployeeHelpModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <!-- Shift Floor Times & Hours -->
+        <div class="card p-4 mb-4" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);">
+          <h4 class="text-sm font-bold text-gradient mb-2">⏱️ Shift Hours &amp; Floor Anchors</h4>
+          <ul class="text-xs space-y-2 text-muted" style="line-height: 1.6; list-style-type: disc; padding-left: 1.25rem;">
+            <li><strong>Standard Weekdays (Mon - Fri):</strong> 08:00 AM – 17:00 PM (9 hours total).</li>
+            <li><strong>Saturdays:</strong> 08:00 AM – 13:00 PM (5 hours total).</li>
+            <li><strong>Early Clock-In Floor:</strong> Clocking in before 08:00 AM is anchored to <strong>08:00 AM</strong>.</li>
+            <li><strong>5-Minute Rounding:</strong> Clocking in after 08:00 AM is dynamically rounded to the nearest 5 minutes (e.g. 08:07 &rarr; 08:05, 08:08 &rarr; 08:10).</li>
+            <li><strong>Automatic 1-Hour Lunch:</strong> Weekday shifts longer than 5 hours automatically deduct a 1-hour lunch break in accordance with the BCEA. Saturdays have zero lunch deduction.</li>
+            <li><strong>Standard Overtime Lock:</strong> Overtime is locked to 0 for standard shifts. Any approved overtime or early departures are audited and verified by an Administrator.</li>
+          </ul>
+        </div>
 
+        <!-- How to Clock In & Out -->
+        <div class="card p-4 mb-4" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);">
+          <h4 class="text-sm font-bold text-gradient mb-2">📍 GPS Location Telemetry</h4>
+          <ul class="text-xs space-y-2 text-muted" style="line-height: 1.6; list-style-type: disc; padding-left: 1.25rem;">
+            <li><strong>Enable GPS:</strong> When prompted by your browser, always select <strong>"Allow"</strong> for location permissions.</li>
+            <li><strong>Reverse Geocoding:</strong> Your coordinates are translated into a verified physical street address in the company activity audit trail.</li>
+            <li><strong>Clock-In First Rule:</strong> You cannot clock out in the afternoon unless you have clocked in for today.</li>
+            <li><strong>Single Shift Entry:</strong> You can only clock in once and clock out once per day.</li>
+          </ul>
+        </div>
 
-  <script src="../shared/js/api.js"></script>
+        <!-- Leave & Hardware -->
+        <div class="card p-4" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);">
+          <h4 class="text-sm font-bold text-gradient mb-2">📅 Leave &amp; 💻 Hardware Checkouts</h4>
+          <ul class="text-xs space-y-2 text-muted" style="line-height: 1.6; list-style-type: disc; padding-left: 1.25rem;">
+            <li><strong>Leave Applications:</strong> Click <em>"Apply for Leave"</em> to submit Sick (SL), Annual (AL), or Family Responsibility (FL) requests. Track approval status in the portal.</li>
+            <li><strong>Device Checkouts:</strong> Request field laptops, LTE routers, and scanners. Return hardware promptly at the end of assignments.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="../DOCUMENTATION.md" target="_blank" class="btn btn-secondary btn-sm" style="margin-right: auto;">
+          <span>📄</span> Open Full Docs
+        </a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeEmployeeHelpModal()">Got It</button>
+      </div>
+    </div>
+  </div>
   <script src="../shared/js/leave_device.js"></script>
   <script src="employee.js?v=2.2"></script>
 </body>

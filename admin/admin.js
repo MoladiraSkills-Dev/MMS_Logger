@@ -51,15 +51,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize Client Loggers Hub
   renderClientLoggers();
 
-  // Support direct URL hash navigation (e.g. admin/index.html#loggers)
+  // Support direct URL hash navigation (e.g. admin/index.html#docs)
   const initialHash = window.location.hash.replace("#", "").toLowerCase();
-  if (initialHash && ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers'].includes(initialHash)) {
+  if (initialHash && ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers', 'docs'].includes(initialHash)) {
     switchAdminTab(initialHash);
   }
 
   window.addEventListener("hashchange", () => {
     const hash = window.location.hash.replace("#", "").toLowerCase();
-    if (hash && ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers'].includes(hash)) {
+    if (hash && ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers', 'docs'].includes(hash)) {
       switchAdminTab(hash);
     }
   });
@@ -245,7 +245,7 @@ function populateExportStaffDropdown(staffList) {
    ========================================================================== */
 
 function switchAdminTab(tabName) {
-  const tabs = ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers'];
+  const tabs = ['logs', 'daily', 'weekly', 'monthly', 'leave', 'device', 'users', 'export', 'loggers', 'docs'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tabBtn${capitalize(t)}`);
     const content = document.getElementById(`contentTab${capitalize(t)}`);
@@ -267,6 +267,18 @@ function switchAdminTab(tabName) {
     } else {
       topHeaderBtn.classList.remove("btn-primary");
       topHeaderBtn.classList.add("btn-secondary");
+    }
+  }
+
+  // Highlight top header button if on docs
+  const topDocsBtn = document.getElementById("btnAdminDocs");
+  if (topDocsBtn) {
+    if (tabName === 'docs') {
+      topDocsBtn.classList.remove("btn-secondary");
+      topDocsBtn.classList.add("btn-primary");
+    } else {
+      topDocsBtn.classList.remove("btn-primary");
+      topDocsBtn.classList.add("btn-secondary");
     }
   }
 
@@ -2037,3 +2049,52 @@ async function resetClientLoggersToDefault() {
   showToast("Restored official client portals to factory default.", "success", "Defaults Restored");
   renderClientLoggers();
 }
+
+/* ==========================================================================
+   SYSTEM DOCUMENTATION & MANUAL CONTROLLER
+   ========================================================================== */
+
+let ACTIVE_DOCS_CATEGORY = "ALL";
+let SEARCH_DOCS_QUERY = "";
+
+function filterDocsCategory(cat, buttonEl) {
+  ACTIVE_DOCS_CATEGORY = cat;
+  const pills = document.querySelectorAll("#docsCategoryPills .docs-pill");
+  pills.forEach(p => p.classList.remove("active"));
+  if (buttonEl) buttonEl.classList.add("active");
+  applyDocsFilters();
+}
+
+function handleSearchDocs(query) {
+  SEARCH_DOCS_QUERY = (query || "").trim().toLowerCase();
+  applyDocsFilters();
+}
+
+function applyDocsFilters() {
+  const cards = document.querySelectorAll("#docsCardsContainer .docs-section-card");
+  cards.forEach(card => {
+    const cardCat = card.getAttribute("data-category") || "";
+    const cardKeywords = (card.getAttribute("data-keywords") || "").toLowerCase();
+    const cardText = card.innerText.toLowerCase();
+
+    const matchesCategory = (ACTIVE_DOCS_CATEGORY === "ALL" || cardCat === ACTIVE_DOCS_CATEGORY);
+    const matchesSearch = !SEARCH_DOCS_QUERY || cardKeywords.includes(SEARCH_DOCS_QUERY) || cardText.includes(SEARCH_DOCS_QUERY);
+
+    if (matchesCategory && matchesSearch) {
+      card.classList.remove("hidden");
+    } else {
+      card.classList.add("hidden");
+    }
+  });
+}
+
+function copyApiUrl() {
+  if (typeof APPS_SCRIPT_WEB_APP_URL !== "undefined") {
+    navigator.clipboard.writeText(APPS_SCRIPT_WEB_APP_URL).then(() => {
+      showToast("API Endpoint URL copied to clipboard.", "success", "Copied");
+    }).catch(() => {
+      prompt("Copy API Endpoint:", APPS_SCRIPT_WEB_APP_URL);
+    });
+  }
+}
+
