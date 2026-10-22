@@ -1050,20 +1050,26 @@ function updateAdminTactileButtonStates() {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
+  const matchDate = (d) => {
+    if (!d) return false;
+    const str = String(d).trim();
+    return str === todayStr || str.includes(todayStr) || str.split(" ")[0] === todayStr;
+  };
+
   const adminShift = CACHED_DAILY.find(s => 
     String(s.email).trim().toLowerCase() === adminEmail && 
-    String(s.date).trim() === todayStr
+    matchDate(s.date)
   );
 
   const adminClockInLog = CACHED_LOGS.find(l => 
     String(l.email).trim().toLowerCase() === adminEmail && 
-    String(l.date).trim() === todayStr && 
+    matchDate(l.date) && 
     String(l.action).trim() === "Clock In"
   );
 
   const adminClockOutLog = CACHED_LOGS.find(l => 
     String(l.email).trim().toLowerCase() === adminEmail && 
-    String(l.date).trim() === todayStr && 
+    matchDate(l.date) && 
     String(l.action).trim() === "Clock Out"
   );
 
@@ -1131,13 +1137,19 @@ async function handleAdminSelfClock(action) {
     const adminEmail = user.email.trim().toLowerCase();
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const matchDate = (d) => {
+      if (!d) return false;
+      const str = String(d).trim();
+      return str === todayStr || str.includes(todayStr) || str.split(" ")[0] === todayStr;
+    };
+
     const hasClockedIn = CACHED_LOGS.some(l => 
       String(l.email).trim().toLowerCase() === adminEmail && 
-      String(l.date).trim() === todayStr && 
+      matchDate(l.date) && 
       String(l.action).trim() === "Clock In"
     ) || CACHED_DAILY.some(s => 
       String(s.email).trim().toLowerCase() === adminEmail && 
-      String(s.date).trim() === todayStr && 
+      matchDate(s.date) && 
       s.clockIn && s.clockIn !== "--"
     );
 

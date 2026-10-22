@@ -10,6 +10,28 @@ let SHIFT_PROGRESS_INTERVAL = null;
 let CURRENT_TODAY_SHIFT = null;
 let CACHED_EMPLOYEE_LOCATION = null;
 
+function getTodayDateKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getLocalCachedShift(email) {
+  if (!email) return null;
+  try {
+    const raw = localStorage.getItem(`mms_shift_${email.toLowerCase()}_${getTodayDateKey()}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setLocalCachedShift(email, shift) {
+  if (!email || !shift) return;
+  try {
+    localStorage.setItem(`mms_shift_${email.toLowerCase()}_${getTodayDateKey()}`, JSON.stringify(shift));
+  } catch (e) {}
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   CURRENT_SESSION = requireSession(null, "../index.html");
   if (!CURRENT_SESSION) return;
@@ -29,7 +51,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // Start live clock
   updateLiveClock("liveClockDisplay", "liveDateDisplay");
 
-  // Load Employee Data
+  // Optimistic Cache Restoration: Check if employee has a cached shift recorded on this device today
+  const cachedShift = getLocalCachedShift(user.email);
+  if (cachedShift) {
+    CURRENT_TODAY_SHIFT = cachedShift;
+    try { renderTodayShift(cachedShift); } catch (e) {}
+    try { updateTactileButtonStates(cachedShift); } catch (e) {}
+  } else {
+    // Show polite telemetry verification status on buttons while network query executes
+    const subOut = document.getElementById("clockOutSubtext");
+    const badgeOut = document.getElementById("clockOutStatusBadge");
+    if (subOut) subOut.innerText = "Checking shift telemetry...";
+    if (badgeOut) badgeOut.innerText = "Syncing...";
+  }
+
+  // Load Employee Data from backend
   loadEmployeeData();
 
   // Shift timeline ticker
@@ -68,21 +104,63 @@ async function loadEmployeeData() {
     const res = await callApi("getEmployeePortalData", { email });
 
     if (res && res.status === "success") {
-      CURRENT_TODAY_SHIFT = res.todayShift || null;
-      try { renderTodayShift(res.todayShift); } catch (e) { console.error("Error rendering today shift:", e); }
+      let shift = res.todayShift || null;
+
+      // Resilient Self-Healing Check: If todayShift reports no clock in, cross-reference res.recentLogs
+      if ((!shift || !shift.clockIn || shift.clockIn === "--" || shift.clockIn === "N/A") && res.recentLogs && res.recentLogs.length > 0) {
+        const todayDateKey = getTodayDateKey();
+        const inLog = res.recentLogs.find(l => {
+          const lDate = l.date ? String(l.date).split(" ")[0].trim() : "";
+          return (lDate === todayDateKey || String(l.date).includes(todayDateKey)) && l.action === "Clock In";
+        });
+        const outLog = res.recentLogs.find(l => {
+          const lDate = l.date ? String(l.date).split(" ")[0].trim() : "";
+          return (lDate === todayDateKey || String(l.date).includes(todayDateKey)) && l.action === "Clock Out";
+        });
+
+        if (inLog) {
+          shift = {
+            clockIn: inLog.time,
+            clockOut: outLog ? outLog.time : "--",
+            floorIn: inLog.time,
+            floorOut: outLog ? outLog.time : "--",
+            totalHours: outLog ? "Completed" : "In Progress",
+            status: outLog ? "Completed" : "In Progress"
+          };
+        }
+      }
+
+      CURRENT_TODAY_SHIFT = shift;
+      if (shift) setLocalCachedShift(email, shift);
+
+      try { renderTodayShift(shift); } catch (e) { console.error("Error rendering today shift:", e); }
       try { renderMyLeaves(res.leaveRequests || []); } catch (e) { console.error("Error rendering leaves:", e); }
       try { renderMyDevices(res.deviceRequests || []); } catch (e) { console.error("Error rendering devices:", e); }
-      try { updateTactileButtonStates(res.todayShift); } catch (e) { console.error("Error updating button states:", e); }
-      try { updateShiftProgressTimeline(res.todayShift); } catch (e) { console.error("Error updating shift progress:", e); }
+      try { updateTactileButtonStates(shift); } catch (e) { console.error("Error updating button states:", e); }
+      try { updateShiftProgressTimeline(shift); } catch (e) { console.error("Error updating shift progress:", e); }
     } else {
       const serverStatus = res ? (res.status || "Unknown") : "No response";
       const errMsg = (res && res.message) ? res.message : `Could not load telemetry (Status: ${serverStatus})`;
       console.warn("Could not retrieve employee portal data:", errMsg);
       showToast(errMsg, "warning", "Sync Issue");
+
+      // Maintain cached shift if server responded with an error
+      const cached = getLocalCachedShift(email);
+      if (cached) {
+        CURRENT_TODAY_SHIFT = cached;
+        updateTactileButtonStates(cached);
+      }
     }
   } catch (err) {
     console.error("Failed to load employee portal data:", err);
     showToast("Connection issue: " + err.message, "danger", "Database Error");
+
+    // Maintain cached shift on network connection failure so user is never locked out
+    const cached = getLocalCachedShift(email);
+    if (cached) {
+      CURRENT_TODAY_SHIFT = cached;
+      updateTactileButtonStates(cached);
+    }
   }
 }
 
@@ -97,8 +175,10 @@ function updateTactileButtonStates(shift) {
 
   if (!btnIn || !btnOut) return;
 
-  const isCompleted = shift && shift.status === "Completed";
-  const isInProgress = shift && shift.status === "In Progress" && shift.clockIn && shift.clockIn !== "--";
+  const hasClockIn = Boolean(shift && shift.clockIn && shift.clockIn !== "--" && shift.clockIn !== "N/A");
+  const hasClockOut = Boolean(shift && shift.clockOut && shift.clockOut !== "--" && shift.clockOut !== "N/A");
+  const isCompleted = Boolean(shift && (shift.status === "Completed" || (hasClockIn && hasClockOut)));
+  const isInProgress = !isCompleted && hasClockIn;
 
   if (isCompleted) {
     // Both completed
@@ -271,16 +351,24 @@ async function handleClockAction(action) {
   hideAlert("employeeAlert");
   const user = CURRENT_SESSION.user;
 
-  // Strict guard: Do not allow Clock Out unless clocked in today
+  // Resilient guard for Clock Out:
   if (action === "Clock Out") {
-    const hasClockedIn = CURRENT_TODAY_SHIFT && 
-                         CURRENT_TODAY_SHIFT.status === "In Progress" && 
-                         CURRENT_TODAY_SHIFT.clockIn && 
-                         CURRENT_TODAY_SHIFT.clockIn !== "--";
-    if (!hasClockedIn) {
-      showToast("Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning", "Clock-In Required");
-      showAlert("employeeAlert", "Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning");
+    const hasIn = Boolean(CURRENT_TODAY_SHIFT && CURRENT_TODAY_SHIFT.clockIn && CURRENT_TODAY_SHIFT.clockIn !== "--" && CURRENT_TODAY_SHIFT.clockIn !== "N/A");
+    const isComp = Boolean(CURRENT_TODAY_SHIFT && (CURRENT_TODAY_SHIFT.status === "Completed" || (hasIn && CURRENT_TODAY_SHIFT.clockOut && CURRENT_TODAY_SHIFT.clockOut !== "--")));
+
+    if (isComp) {
+      showToast("Shift already completed and finalized for today.", "info", "Shift Complete");
       return;
+    }
+
+    if (!hasIn) {
+      const cached = getLocalCachedShift(user.email);
+      const cachedHasIn = Boolean(cached && cached.clockIn && cached.clockIn !== "--");
+      if (!cachedHasIn) {
+        showToast("Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning", "Clock-In Required");
+        showAlert("employeeAlert", "Action Blocked: You cannot clock out because you have not clocked in for today yet. Please clock in first.", "warning");
+        return;
+      }
     }
   }
 
@@ -345,7 +433,27 @@ async function handleClockAction(action) {
       showToast(`Successfully recorded ${action} at ${res.time}!`, "success", `${action} Recorded`);
       showAlert("employeeAlert", `Successfully recorded ${action} at ${res.time}! Physical location: ${cleanLoc}`, "success");
       
-      // Refresh dashboard
+      // OPTIMISTIC LOCAL UPDATE: Update shift state immediately so UI updates without network lag
+      if (action === "Clock In") {
+        CURRENT_TODAY_SHIFT = {
+          clockIn: res.time,
+          clockOut: "--",
+          floorIn: res.time,
+          floorOut: "--",
+          totalHours: "In Progress",
+          status: "In Progress"
+        };
+      } else if (action === "Clock Out") {
+        if (!CURRENT_TODAY_SHIFT) CURRENT_TODAY_SHIFT = {};
+        CURRENT_TODAY_SHIFT.clockOut = res.time;
+        CURRENT_TODAY_SHIFT.status = "Completed";
+        CURRENT_TODAY_SHIFT.totalHours = "Completed";
+      }
+      setLocalCachedShift(user.email, CURRENT_TODAY_SHIFT);
+      try { renderTodayShift(CURRENT_TODAY_SHIFT); } catch (e) {}
+      try { updateTactileButtonStates(CURRENT_TODAY_SHIFT); } catch (e) {}
+      
+      // Refresh full dashboard from server
       loadEmployeeData();
     } else {
       showToast(res.message || `Unable to record ${action}.`, "danger", "Action Blocked");
