@@ -1693,6 +1693,18 @@ const DEFAULT_CLIENT_LOGGERS = [
     badge: "CDA Corporate",
     desc: "Corporate employee check-in, shift management, geolocation attendance tracking, and leave portal for CDA Solutions.",
     isDefault: true
+  },
+  {
+    id: "vuma-logger",
+    client: "Vuma",
+    title: "VUMA Logger - Admin Dashboard",
+    url: "https://moladiraskills-dev.github.io/VUMA-Logger/admin/index.html",
+    category: "Fibre & Infrastructure",
+    theme: "magenta",
+    icon: "📡",
+    badge: "VUMA Admin",
+    desc: "Administrator and operations dashboard for Vuma fibre network attendance logs, daily summaries, staff management, leave, and timesheet exports.",
+    isDefault: true
   }
 ];
 
@@ -1709,11 +1721,16 @@ function getClientLoggers() {
     // Ensure all default client loggers exist in the active collection
     const existingIds = new Set(parsed.map(l => l.id));
     const merged = [...parsed];
+    let hasNewDefaults = false;
     DEFAULT_CLIENT_LOGGERS.forEach(def => {
       if (!existingIds.has(def.id)) {
         merged.push(def);
+        hasNewDefaults = true;
       }
     });
+    if (hasNewDefaults) {
+      saveClientLoggers(merged);
+    }
     return merged;
   } catch (e) {
     console.error("Error reading client loggers from storage:", e);
@@ -2038,7 +2055,7 @@ async function deleteClientLogger(id, name) {
 
 async function resetClientLoggersToDefault() {
   const confirmed = await showConfirmModal(
-    "Restore the 4 default official client portals (FNB Logsheet, Fibre Field Ops, SADV Logger, FibreGems CRM)? Custom loggers will be cleared.",
+    "Restore the 6 default official client portals (FNB Logsheet, Fibre Field Ops, SADV Logger, FibreGems CRM, CDA Solutions, Vuma Logger)? Custom loggers will be cleared.",
     "Restore Defaults",
     "warning"
   );

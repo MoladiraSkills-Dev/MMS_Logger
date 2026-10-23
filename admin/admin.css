@@ -434,6 +434,9 @@
 .client-logger-card.theme-purple {
   --card-accent: linear-gradient(135deg, #9333ea, #d946ef);
 }
+.client-logger-card.theme-magenta {
+  --card-accent: linear-gradient(135deg, #e6007e, #db2777);
+}
 .client-logger-card.theme-emerald {
   --card-accent: linear-gradient(135deg, #10b981, #059669);
 }
