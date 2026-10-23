@@ -36,25 +36,31 @@ async function callApi(method, args = {}) {
     return await res.json();
   };
 
+  let json = null;
+  let lastError = null;
+
   try {
     // Tier 1: Standard CORS form-urlencoded POST with credentials omitted
-    let json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
-      method: "POST",
-      mode: "cors",
-      credentials: "omit",
-      redirect: "follow",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: formBody
-    });
+    try {
+      json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        redirect: "follow",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: formBody
+      });
+    } catch (tier1Err) {
+      lastError = tier1Err;
+      console.warn(`[MMS API] Tier 1 POST error for "${method}", attempting fallback transports...`, tier1Err);
+    }
 
-    // Check if Google Apps Script returned operational handshake from doGet instead of doPost
+    // Check if Google Apps Script returned operational handshake from doGet instead of doPost or Tier 1 failed
     const isOperationalHandshake = json && json.status === "Operational" && !json.logs && !json.summaries && !json.todayShift;
     
-    if (isOperationalHandshake) {
-      console.warn(`[MMS API] Detected doGet operational handshake for "${method}". Initiating fallback transports...`);
-
+    if (!json || isOperationalHandshake) {
       // Tier 2: text/plain raw JSON POST (CORS simple request, bypasses form parser)
       try {
         json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
@@ -68,11 +74,13 @@ async function callApi(method, args = {}) {
           body: payload
         });
       } catch (fb1Err) {
-        console.warn("[MMS API] text/plain fallback error:", fb1Err);
+        lastError = fb1Err;
+        console.warn("[MMS API] Tier 2 text/plain fallback error:", fb1Err);
       }
 
       // Tier 3: GET query parameter (if payload length permits)
-      if (json && json.status === "Operational") {
+      const isStillHandshake = json && json.status === "Operational" && !json.logs && !json.summaries && !json.todayShift;
+      if (!json || isStillHandshake) {
         try {
           const sep = APPS_SCRIPT_WEB_APP_URL.includes("?") ? "&" : "?";
           const getUrl = `${APPS_SCRIPT_WEB_APP_URL}${sep}payload=${encodeURIComponent(payload)}`;
@@ -83,9 +91,14 @@ async function callApi(method, args = {}) {
             redirect: "follow"
           });
         } catch (fb2Err) {
-          console.warn("[MMS API] GET query fallback error:", fb2Err);
+          lastError = fb2Err;
+          console.warn("[MMS API] Tier 3 GET query fallback error:", fb2Err);
         }
       }
+    }
+
+    if (!json && lastError) {
+      throw lastError;
     }
 
     return json;
@@ -224,8 +237,9 @@ function requireSession(requiredRole = null, loginUrl = "../index.html") {
     return null;
   }
 
-  if (requiredRole && session.accountType !== requiredRole) {
-    if (session.accountType === "Admin") {
+  const sessionRole = String(session.accountType || "").trim();
+  if (requiredRole && sessionRole.toLowerCase() !== requiredRole.toLowerCase()) {
+    if (sessionRole.toLowerCase() === "admin") {
       window.location.href = "../admin/index.html";
     } else {
       window.location.href = "../employee/index.html";

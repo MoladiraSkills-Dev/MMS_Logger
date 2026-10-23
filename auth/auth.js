@@ -160,7 +160,7 @@ async function handleLoginSubmit(event) {
   const passwordInput = document.getElementById("loginPassword");
   const submitBtn = document.getElementById("btnLoginSubmit");
 
-  const email = emailInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
   const password = passwordInput.value;
 
   if (!email || !password) {
@@ -208,7 +208,7 @@ async function handleRegisterSubmit(event) {
 
   const firstName = document.getElementById("regFirstName").value.trim();
   const lastName = document.getElementById("regLastName").value.trim();
-  const email = document.getElementById("regEmail").value.trim();
+  const email = document.getElementById("regEmail").value.trim().toLowerCase();
   const password = document.getElementById("regPassword").value;
   const confirmPassword = document.getElementById("regConfirmPassword").value;
   const submitBtn = document.getElementById("btnRegisterSubmit");
