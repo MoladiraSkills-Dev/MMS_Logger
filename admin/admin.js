@@ -1633,6 +1633,13 @@ function escapeHtml(text) {
 
 const CLIENT_LOGGERS_STORAGE_KEY = "mms_client_loggers";
 
+// Apps Script exec URLs for client loggers that expose getLoginStats
+const CLIENT_LOGGER_API_URLS = {
+  "sadv-logger": "https://script.google.com/macros/s/AKfycbzBiWo7NGSKMCDVflPCGmnVfT46Blq-ZmdokXafVSf36-lfA-_Ob-4I28ukMR3nDAjD/exec",
+  "cda-logger": "https://script.google.com/macros/s/AKfycbz7CWI8ioBzhkVNfKkwIUiYoLJHG8c_BEYLmxFrRAKMkb-UEklboASiByNS2Y7s8wLV/exec",
+  "vuma-logger": "https://script.google.com/macros/s/AKfycbwWruO5BhX6LGfHK44Rfd8f9_861rHmnE52dJmuvq8VYAjVPGFZKPOy0skvI9qcKhW8hg/exec"
+};
+
 const DEFAULT_CLIENT_LOGGERS = [
   {
     id: "fnb-logsheet",
@@ -1803,9 +1810,15 @@ function renderClientLoggers() {
                 <div class="text-xs font-semibold text-gradient">${escapedTitle}</div>
               </div>
             </div>
-            <span class="client-logger-status">
-              <span class="status-dot"></span> Active Gateway
-            </span>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;">
+              <span class="client-logger-status">
+                <span class="status-dot"></span> Active Gateway
+              </span>
+              ${CLIENT_LOGGER_API_URLS[logger.id] ? `
+              <span class="client-logger-logins" data-login-count-for="${escapeHtml(logger.id)}" title="Fetching total logins...">
+                <span class="login-count-dot"></span><span class="login-count-text">… today</span>
+              </span>` : ""}
+            </div>
           </div>
 
           <p class="client-logger-desc">${escapedDesc}</p>
@@ -1837,6 +1850,40 @@ function renderClientLoggers() {
       </div>
     `;
   }).join("");
+
+  loadClientLoginStats();
+}
+
+/**
+ * Fetches total successful login counts from each client logger's own Apps Script
+ * backend (getLoginStats) and updates the badges on their admin cards.
+ * Runs non-blocking; failures degrade to an "n/a" state on that card only.
+ */
+async function loadClientLoginStats() {
+  const loggers = getClientLoggers();
+  await Promise.allSettled(loggers.map(async (logger) => {
+    const apiUrl = CLIENT_LOGGER_API_URLS[logger.id];
+    if (!apiUrl) return;
+    const badge = document.querySelector(`[data-login-count-for="${logger.id}"]`);
+    if (!badge) return;
+    const textEl = badge.querySelector(".login-count-text");
+    try {
+      const res = await callApi("getLoginStats", {}, apiUrl);
+      const todayCount = typeof res.loginsToday === "number" ? res.loginsToday
+        : (typeof res.totalLogins === "number" ? res.totalLogins : null);
+      if (res && res.status === "success" && todayCount !== null) {
+        if (textEl) textEl.textContent = `${todayCount.toLocaleString()} logins today`;
+        badge.title = `Total clock-ins recorded today by ${logger.title}`;
+        badge.classList.remove("logins-unavailable");
+      } else {
+        throw new Error((res && res.message) || "Unexpected response");
+      }
+    } catch (err) {
+      if (textEl) textEl.textContent = "logins n/a";
+      badge.title = `${logger.title} login stats unavailable: ${err.message || err}`;
+      badge.classList.add("logins-unavailable");
+    }
+  }));
 }
 
 function filterLoggersByCategory(category, pillEl) {

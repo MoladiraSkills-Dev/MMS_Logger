@@ -18,8 +18,8 @@ const SESSION_STORAGE_KEY = "mms_logger_session";
  * 3. Detects if Google Apps Script downgraded POST to doGet ({ status: "Operational" })
  *    and seamlessly executes fallback transport mechanisms.
  */
-async function callApi(method, args = {}) {
-  if (!APPS_SCRIPT_WEB_APP_URL || APPS_SCRIPT_WEB_APP_URL.includes("CHANGE_ME")) {
+async function callApi(method, args = {}, baseUrl = APPS_SCRIPT_WEB_APP_URL) {
+  if (!baseUrl || baseUrl.includes("CHANGE_ME")) {
     console.warn("MMS Logger: APPS_SCRIPT_WEB_APP_URL is not configured yet in shared/js/api.js");
   }
 
@@ -42,7 +42,7 @@ async function callApi(method, args = {}) {
   try {
     // Tier 1: Standard CORS form-urlencoded POST with credentials omitted
     try {
-      json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
+      json = await fetchJson(baseUrl, {
         method: "POST",
         mode: "cors",
         credentials: "omit",
@@ -63,7 +63,7 @@ async function callApi(method, args = {}) {
     if (!json || isOperationalHandshake) {
       // Tier 2: text/plain raw JSON POST (CORS simple request, bypasses form parser)
       try {
-        json = await fetchJson(APPS_SCRIPT_WEB_APP_URL, {
+        json = await fetchJson(baseUrl, {
           method: "POST",
           mode: "cors",
           credentials: "omit",
@@ -83,7 +83,7 @@ async function callApi(method, args = {}) {
       if (!json || isStillHandshake) {
         try {
           const sep = APPS_SCRIPT_WEB_APP_URL.includes("?") ? "&" : "?";
-          const getUrl = `${APPS_SCRIPT_WEB_APP_URL}${sep}payload=${encodeURIComponent(payload)}`;
+          const getUrl = `${baseUrl}${sep}payload=${encodeURIComponent(payload)}`;
           json = await fetchJson(getUrl, {
             method: "GET",
             mode: "cors",

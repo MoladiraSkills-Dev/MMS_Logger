@@ -508,6 +508,37 @@
   animation: pulseGlow 2s infinite ease-in-out;
 }
 
+
+/* Total successful sign-ins pill on client logger cards */
+.client-logger-logins {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.1);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.login-count-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  flex-shrink: 0;
+}
+
+.client-logger-logins.logins-unavailable {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-dim);
+  border-color: var(--border-muted);
+}
 .client-logger-desc {
   font-size: 0.875rem;
   color: var(--text-muted);
